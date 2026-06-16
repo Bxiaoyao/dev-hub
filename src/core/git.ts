@@ -1,11 +1,29 @@
 import { simpleGit } from 'simple-git';
 import type { BranchInfo } from '../types/index';
 
+// 配置 simple-git 选项，禁用交互式提示
+const gitOptions = {
+  baseDir: process.cwd(),
+  binary: 'git',
+  maxConcurrentProcesses: 6,
+  trimmed: true,
+  // 配置环境变量，禁用交互式凭据提示
+  env: {
+    ...process.env,
+    // 禁用 Git 凭据助手的交互式提示
+    GIT_TERMINAL_PROMPT: '0',
+    // 使用缓存的凭据
+    GIT_ASKPASS: '',
+    // SSH 配置：不提示密码
+    GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND || 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new',
+  },
+};
+
 export async function getGitInfo(dir: string): Promise<{
   branch: string;
   remote: string | undefined;
 }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   const branchSummary = await git.branchLocal();
   const branch = branchSummary.current;
@@ -28,7 +46,7 @@ export async function getGitStatus(dir: string): Promise<{
   ahead: number;
   behind: number;
 }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     const status = await git.status();
@@ -60,7 +78,7 @@ export async function getGitStatus(dir: string): Promise<{
 }
 
 export async function getBranches(dir: string): Promise<BranchInfo[]> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
   const branches: BranchInfo[] = [];
 
   try {
@@ -103,7 +121,7 @@ export async function checkoutBranch(
   dir: string,
   branch: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     // Check for uncommitted changes
@@ -129,7 +147,7 @@ export async function stashAndCheckout(
   dir: string,
   branch: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     await git.stash();
@@ -147,7 +165,7 @@ export async function createBranch(
   dir: string,
   branch: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     await git.checkoutBranch(branch, 'HEAD');
@@ -164,7 +182,7 @@ export async function deleteBranch(
   dir: string,
   branch: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     await git.deleteLocalBranch(branch);
@@ -178,35 +196,50 @@ export async function deleteBranch(
 }
 
 export async function pull(dir: string): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     await git.pull();
     return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    // 提供更友好的错误提示
+    if (errorMsg.includes('could not read Username') || errorMsg.includes('Authentication')) {
+      return {
+        success: false,
+        error: '认证失败：请检查 Git 凭据配置。建议使用 SSH 密钥或配置 Git 凭据助手。',
+      };
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMsg,
     };
   }
 }
 
 export async function fetchAll(dir: string): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     await git.fetch(['--all', '--prune']);
     return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    if (errorMsg.includes('could not read Username') || errorMsg.includes('Authentication')) {
+      return {
+        success: false,
+        error: '认证失败：请检查 Git 凭据配置。建议使用 SSH 密钥或配置 Git 凭据助手。',
+      };
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMsg,
     };
   }
 }
 
 export async function getRecentCommits(dir: string, count = 10): Promise<string[]> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     const log = await git.log(['--oneline', `-n${count}`]);
@@ -220,7 +253,7 @@ export async function cloneRepo(
   url: string,
   targetDir: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit();
+  const git = simpleGit(gitOptions);
 
   try {
     await git.clone(url, targetDir);
@@ -238,7 +271,7 @@ export async function commitChanges(
   dir: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     // 先添加所有更改
@@ -259,7 +292,7 @@ export async function push(
   dir: string,
   branch?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     if (branch) {
@@ -269,9 +302,16 @@ export async function push(
     }
     return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    if (errorMsg.includes('could not read Username') || errorMsg.includes('Authentication')) {
+      return {
+        success: false,
+        error: '认证失败：请检查 Git 凭据配置。建议使用 SSH 密钥或配置 Git 凭据助手。',
+      };
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMsg,
     };
   }
 }
@@ -281,7 +321,7 @@ export async function createAndCheckoutBranch(
   dir: string,
   branch: string
 ): Promise<{ success: boolean; error?: string }> {
-  const git = simpleGit(dir);
+  const git = simpleGit({ ...gitOptions, baseDir: dir });
 
   try {
     // 检查是否有未提交的更改

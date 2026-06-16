@@ -26,101 +26,91 @@ export function SearchBar({
   onViewModeChange,
 }: SearchBarProps) {
   return (
-    <div className="mb-6 space-y-4">
-      <div className="flex items-center gap-4">
-        {/* 搜索 */}
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="🔍 搜索项目..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* 视图切换 */}
-        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-          <button
-            onClick={() => onViewModeChange('card')}
-            className={`px-3 py-1 rounded text-sm ${
-              viewMode === 'card'
-                ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            ▤ 卡片
-          </button>
-          <button
-            onClick={() => onViewModeChange('table')}
-            className={`px-3 py-1 rounded text-sm ${
-              viewMode === 'table'
-                ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            ≡ 表格
-          </button>
-        </div>
-
-        {/* 导出按钮 */}
+    <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="flex items-center gap-1">
+        {/* 全选按钮 */}
         <button
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          onClick={onSelectAll}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
         >
-          + 导出
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            {selectedCount === totalCount && totalCount > 0 && (
+              <polyline points="9 11 12 14 22 4" />
+            )}
+          </svg>
+          {selectedCount === totalCount && totalCount > 0 ? '取消全选' : '全选'}
         </button>
+
+        <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+
+        {/* 过滤器按钮 */}
+        {[
+          { value: 'all', label: '全部' },
+          { value: 'dirty', label: '有更改' },
+          { value: 'git', label: 'Git' },
+        ].map((f) => (
+          <button
+            key={f.value}
+            onClick={() => onFilterChange(f.value)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === f.value
+                ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* 过滤器 */}
-        <div className="flex gap-2">
-          {[
-            { value: 'all', label: '全部' },
-            { value: 'git', label: 'Git' },
-            { value: 'recent', label: '最近' },
-            { value: 'dirty', label: '有更改' },
-          ].map((f) => (
-            <button
-              key={f.value}
-              onClick={() => onFilterChange(f.value)}
-              className={`px-3 py-1 rounded-lg text-sm ${
-                filter === f.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 排序 */}
+      <div className="flex items-center gap-2">
+        {/* 排序选择 */}
         <select
           value={sort}
           onChange={(e) => onSortChange(e.target.value)}
-          className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          className="text-sm bg-transparent border-none text-slate-600 dark:text-slate-300 outline-none cursor-pointer hover:text-slate-900 dark:hover:text-white"
         >
-          <option value="recent">最近活跃</option>
-          <option value="name">名称</option>
-          <option value="branch">分支</option>
+          <option value="recent">按最近修改排序</option>
+          <option value="name">按字母排序</option>
         </select>
 
-        {/* 全选 */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {totalCount} 个项目
-          </span>
+        {/* 视图切换 */}
+        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-md border border-slate-200 dark:border-slate-700">
           <button
-            onClick={onSelectAll}
-            className="text-sm text-blue-600 hover:text-blue-700"
+            onClick={() => onViewModeChange('card')}
+            className={`p-1 rounded transition-all ${
+              viewMode === 'card'
+                ? 'bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="卡片视图"
           >
-            {selectedCount === totalCount && totalCount > 0 ? '☑ 取消全选' : '☐ 全选'}
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
           </button>
-          {selectedCount > 0 && (
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-sm">
-              已选 {selectedCount} 个
-            </span>
-          )}
+          <button
+            onClick={() => onViewModeChange('table')}
+            className={`p-1 rounded transition-all ${
+              viewMode === 'table'
+                ? 'bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="列表视图"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>

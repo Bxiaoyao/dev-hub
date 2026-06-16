@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
 import { scanProjects } from '../../core/scanner.js';
 import { installDependencies, upgradePackage } from '../../core/deps.js';
-import { pull, fetchAll, commitChanges, push, createAndCheckoutBranch } from '../../core/git.js';
+import { pull, fetchAll, commitChanges, push, createAndCheckoutBranch, checkoutBranch } from '../../core/git.js';
 import { cleanMultiple } from '../../core/size.js';
 
 export const batchRouter = Router();
@@ -98,6 +98,14 @@ batchRouter.post('/', async (req, res) => {
                 result = await fetchAll(project.path);
               } else {
                 result = { success: false, error: 'Not a git repository' };
+              }
+              break;
+
+            case 'checkout':
+              if (project.isGit && branchName) {
+                result = await checkoutBranch(project.path, branchName);
+              } else {
+                result = { success: false, error: 'Not a git repository or no branch name' };
               }
               break;
 

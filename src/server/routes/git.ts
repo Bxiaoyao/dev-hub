@@ -8,8 +8,23 @@ import {
   checkoutBranch,
   createBranch,
   deleteBranch,
+  stashAndCheckout,
 } from '../../core/git.js';
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
+
+// Git 配置选项，禁用交互式提示
+const gitOptions = {
+  baseDir: process.cwd(),
+  binary: 'git',
+  maxConcurrentProcesses: 6,
+  trimmed: true,
+  env: {
+    ...process.env,
+    GIT_TERMINAL_PROMPT: '0',
+    GIT_ASKPASS: '',
+    GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND || 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new',
+  },
+};
 
 export const gitRouter = Router({ mergeParams: true });
 
@@ -105,7 +120,7 @@ gitRouter.post('/stash', async (req, res) => {
       return;
     }
 
-    const git = simpleGit(project.path);
+    const git = simpleGit({ baseDir: project.path, ...gitOptions });
     await git.stash();
     res.json({ success: true });
   } catch (error) {
@@ -129,7 +144,7 @@ gitRouter.post('/stash-pop', async (req, res) => {
       return;
     }
 
-    const git = simpleGit(project.path);
+    const git = simpleGit({ baseDir: project.path, ...gitOptions });
     await git.stash(['pop']);
     res.json({ success: true });
   } catch (error) {
@@ -157,9 +172,7 @@ gitRouter.post('/checkout', async (req, res) => {
 
     let result;
     if (stash) {
-      const git = simpleGit(project.path);
-      await git.stash();
-      result = await checkoutBranch(project.path, branch);
+      result = await stashAndCheckout(project.path, branch);
     } else {
       result = await checkoutBranch(project.path, branch);
     }
