@@ -1,0 +1,70 @@
+# DevHub bash completion script
+
+_devhub_completion() {
+  local cur prev words cword
+  _init_completion || return
+
+  local commands="list info open git deps batch export import check snapshot create"
+
+  if [[ ${cword} -eq 1 ]]; then
+    COMPREPLY=($(compgen -W "${commands} --help --version" -- "${cur}"))
+    return
+  fi
+
+  local cmd=${words[1]}
+
+  case ${cmd} in
+    list)
+      COMPREPLY=($(compgen -W "--json --filter --help" -- "${cur}"))
+      ;;
+
+    open)
+      COMPREPLY=($(compgen -W "--editor cursor code webstorm" -- "${cur}"))
+      ;;
+
+    git)
+      local git_actions="pull fetch status log stash checkout"
+      if [[ ${cword} -eq 2 ]]; then
+        COMPREPLY=($(compgen -W "${git_actions}" -- "${cur}"))
+      fi
+      ;;
+
+    deps)
+      local deps_actions="install update audit"
+      if [[ ${cword} -eq 2 ]]; then
+        COMPREPLY=($(compgen -W "${deps_actions}" -- "${cur}"))
+      fi
+      ;;
+
+    batch)
+      local batch_actions="install pull clean check"
+      if [[ ${cword} -eq 2 ]]; then
+        COMPREPLY=($(compgen -W "${batch_actions}" -- "${cur}"))
+      fi
+      ;;
+
+    export)
+      COMPREPLY=($(compgen -W "--output --no-hooks" -- "${cur}"))
+      ;;
+
+    import)
+      COMPREPLY=($(compgen -W "--file --directory --parallel --skip-hooks --dry-run" -- "${cur}"))
+      ;;
+
+    snapshot)
+      local snapshot_actions="save restore list delete"
+      if [[ ${cword} -eq 2 ]]; then
+        COMPREPLY=($(compgen -W "${snapshot_actions}" -- "${cur}"))
+      fi
+      ;;
+
+    create)
+      local templates="nextjs-app nextjs-pages vite-react vite-vue express hono"
+      if [[ ${cword} -eq 2 ]]; then
+        COMPREPLY=($(compgen -W "${templates}" -- "${cur}"))
+      fi
+      ;;
+  esac
+}
+
+complete -F _devhub_completion devhub

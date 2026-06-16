@@ -1,0 +1,156 @@
+#compdef devhub
+
+# DevHub zsh completion script
+
+_devhub() {
+  local -a commands
+  commands=(
+    'list:List all projects'
+    'info:Show project details'
+    'open:Open project in editor'
+    'git:Git operations'
+    'deps:Dependency management'
+    'batch:Batch operations'
+    'export:Export projects to file'
+    'import:Import projects from file'
+    'check:Health check'
+    'snapshot:Environment snapshots'
+    'create:Create new project'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+    return
+  fi
+
+  local cmd=${words[2]}
+
+  case $cmd in
+    list)
+      _arguments \
+        '--json[JSON output]' \
+        '--filter[Filter by name]:pattern' \
+        '--help[Show help]'
+      ;;
+
+    open)
+      _arguments \
+        '--editor[Specify editor]:editor:(cursor code webstorm)' \
+        '::project:_devhub_projects'
+      ;;
+
+    info)
+      _arguments \
+        '::project:_devhub_projects'
+      ;;
+
+    git)
+      local -a git_actions
+      git_actions=(
+        'pull:Pull from remote'
+        'fetch:Fetch all remotes'
+        'status:Show git status'
+        'log:Show recent commits'
+        'stash:Stash changes'
+        'checkout:Switch branch'
+      )
+      if (( CURRENT == 3 )); then
+        _describe 'action' git_actions
+      elif (( CURRENT == 4 )); then
+        case ${words[3]} in
+          checkout)
+            _devhub_branches
+            ;;
+        esac
+      fi
+      _arguments '::project:_devhub_projects'
+      ;;
+
+    deps)
+      local -a deps_actions
+      deps_actions=(
+        'install:Install dependencies'
+        'update:Update packages'
+        'audit:Security audit'
+      )
+      if (( CURRENT == 3 )); then
+        _describe 'action' deps_actions
+      fi
+      _arguments '::project:_devhub_projects'
+      ;;
+
+    batch)
+      local -a batch_actions
+      batch_actions=(
+        'install:Install all dependencies'
+        'pull:Pull all projects'
+        'clean:Clean all projects'
+        'check:Health check'
+      )
+      if (( CURRENT == 3 )); then
+        _describe 'action' batch_actions
+      fi
+      _arguments '--parallel[Run in parallel]'
+      ;;
+
+    export)
+      _arguments \
+        '--output[Output file]:file:_files' \
+        '--no-hooks[Exclude hooks]'
+      ;;
+
+    import)
+      _arguments \
+        '--file[Input file]:file:_files' \
+        '--directory[Target directory]:directory:_directories' \
+        '--parallel[Parallel jobs]:number' \
+        '--skip-hooks[Skip hooks]' \
+        '--dry-run[Preview mode]'
+      ;;
+
+    snapshot)
+      local -a snapshot_actions
+      snapshot_actions=(
+        'save:Save snapshot'
+        'restore:Restore snapshot'
+        'list:List snapshots'
+        'delete:Delete snapshot'
+      )
+      if (( CURRENT == 3 )); then
+        _describe 'action' snapshot_actions
+      fi
+      _arguments '--name[Snapshot name]:name'
+      ;;
+
+    create)
+      local -a templates
+      templates=(
+        'nextjs-app:Next.js App Router'
+        'nextjs-pages:Next.js Pages Router'
+        'vite-react:Vite + React'
+        'vite-vue:Vite + Vue'
+        'express:Express API'
+        'hono:Hono API'
+      )
+      if (( CURRENT == 3 )); then
+        _describe 'template' templates
+      fi
+      ;;
+  esac
+}
+
+_devhub_projects() {
+  local -a projects
+  # In a real implementation, this would call `devhub list --json`
+  # For now, we return empty
+  projects=()
+  _describe 'project' projects
+}
+
+_devhub_branches() {
+  local -a branches
+  branches=()
+  _describe 'branch' branches
+}
+
+_devhub
