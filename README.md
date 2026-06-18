@@ -93,12 +93,12 @@ cd ~/dev-hub
 
 | 子命令 | 说明 |
 |--------|------|
-| `install` | 首次安装（克隆、构建、PM2 启动） |
+| `install` | 首次安装（克隆、构建、启动；有 PM2 用 PM2，否则 node 后台启动） |
 | `update` | 拉取最新代码并重新构建、重启 |
-| `status` | 查看运行状态 |
-| `logs` | 查看日志 |
-| `restart` | 重启服务 |
-| `stop` | 停止服务 |
+| `status` | 查看运行状态（需 PM2） |
+| `logs` | 查看日志（需 PM2） |
+| `restart` | 重启服务（需 PM2） |
+| `stop` | 停止服务（仅 PM2 管理的进程；node 直接启动见下文） |
 
 #### Windows（PowerShell）
 
@@ -123,10 +123,10 @@ cd $env:USERPROFILE\dev-hub
 
 | 子命令 | 说明 |
 |--------|------|
-| `install` | 首次安装（克隆、构建、后台启动） |
-| `update` | 拉取最新代码并重新构建、重启 |
-| `status` | 查看运行状态 |
-| `stop` | 停止服务 |
+| `install` | 首次安装（克隆、构建、node 后台启动） |
+| `update` | 拉取最新代码并重新构建、重启（node 方式） |
+| `status` | 查看运行状态（读取 PID 文件） |
+| `stop` | 停止服务（node 直接启动的进程） |
 
 #### 可选环境变量
 
@@ -154,6 +154,89 @@ $env:DEVHUB_PORT = '3300'
 
 每台机器的 `~/.devhub/config.yaml`（扫描目录等）相互独立，互不影响。
 
+### 从 node 切换为 PM2
+
+安装时若无法使用 PM2，脚本会用 node 直接后台启动（macOS / Linux 为 `nohup`，Windows 为 PID 文件）。后续装好 PM2 后可按平台切换。
+
+#### macOS / Linux
+
+安装时若尚未安装 PM2，脚本会用 `nohup node` 直接启动。后续装好 PM2 后，按以下步骤切换：
+
+```bash
+# 1. 停掉 node 直接启动的进程（install.sh stop 无法停止这类进程）
+kill $(lsof -ti :3200) 2>/dev/null || true
+
+# 2. 全局安装 PM2
+npm install -g pm2
+
+# 3. 在 ~/dev-hub 用脚本重新启动（会生成 ecosystem.config.json 并 pm2 start）
+cd ~/dev-hub
+./scripts/install.sh update
+```
+
+验证：
+
+```bash
+pm2 status devhub
+pm2 logs devhub
+```
+
+（可选）开机自启：
+
+```bash
+pm2 startup    # 按终端提示执行输出的 sudo 命令
+pm2 save
+```
+
+之后执行 `install.sh update` 时会自动 `pm2 restart`，不再走 node 直接启动。
+
+#### Windows（PowerShell）
+
+`install.ps1` 默认使用 node 后台启动。切换 PM2：
+
+```powershell
+# 1. 停止 node 直接启动的进程
+& $env:USERPROFILE\dev-hub\scripts\install.ps1 stop
+
+# 若 stop 无效，按端口结束占用 3200 的进程：
+Get-NetTCPConnection -LocalPort 3200 -ErrorAction SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+
+# 2. 全局安装 PM2
+npm install -g pm2
+
+# 3. 在安装目录用 PM2 启动
+cd $env:USERPROFILE\dev-hub
+npm run build
+pm2 start dist/index.js --name devhub --cwd $env:USERPROFILE\dev-hub -- --no-open --port 3200
+pm2 save
+```
+
+验证：
+
+```powershell
+pm2 status devhub
+pm2 logs devhub
+```
+
+（可选）开机自启（**以管理员身份**打开 PowerShell）：
+
+```powershell
+pm2 startup
+pm2 save
+```
+
+> **注意：** 切换 PM2 后，请用 `pm2 restart devhub` 重启服务，**不要**再执行 `install.ps1 update`（会改回 node 启动）。更新代码请用：
+>
+> ```powershell
+> cd $env:USERPROFILE\dev-hub
+> git pull
+> npm ci; npm run build
+> pm2 restart devhub
+> ```
+>
+> 或在 **Git Bash** 中执行 `install.sh update`（检测到 PM2 时会自动走 PM2 流程）。
+
 ### 卸载 / 清理
 
 #### macOS / Linux
@@ -162,6 +245,7 @@ $env:DEVHUB_PORT = '3300'
 # 1. 停止服务
 curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- stop
 # 或本地：~/dev-hub/scripts/install.sh stop
+# 若为 node 直接启动（无 PM2），还需：kill $(lsof -ti :3200)
 
 # 2. 移除 PM2 进程（若使用 PM2 安装）
 pm2 delete devhub 2>/dev/null; pm2 save 2>/dev/null
@@ -178,6 +262,10 @@ rm -rf ~/.devhub
 ```powershell
 # 1. 停止服务
 & $env:USERPROFILE\dev-hub\scripts\install.ps1 stop
+# 若已切换 PM2：pm2 stop devhub; pm2 delete devhub; pm2 save
+# 若仍有进程占用 3200：
+Get-NetTCPConnection -LocalPort 3200 -ErrorAction SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
 
 # 2. 删除安装目录（安装失败时可单独执行此步后重装）
 Remove-Item -Recurse -Force $env:USERPROFILE\dev-hub
