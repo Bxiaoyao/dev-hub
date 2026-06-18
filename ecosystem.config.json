@@ -3,7 +3,8 @@
     {
       "name": "devhub",
       "script": "dist/index.js",
-      "args": "--no-open",
+      "args": "--no-open --port 3200",
+      "cwd": "/Users/bianshun/project/小工具/项目管理",
       "interpreter": "node",
       "watch": false,
       "autorestart": true,
@@ -14,8 +15,8 @@
       },
       "time": true,
       "log_date_format": "YYYY-MM-DD HH:mm:ss",
-      "error_file": "~/.devhub/logs/error.log",
-      "out_file": "~/.devhub/logs/out.log"
+      "error_file": "/Users/bianshun/.devhub/logs/error.log",
+      "out_file": "/Users/bianshun/.devhub/logs/out.log"
     }
   ]
 }

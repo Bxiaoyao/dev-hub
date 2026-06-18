@@ -1,6 +1,6 @@
 import { execa } from 'execa';
-import type { Config } from '../types';
-import { loadConfig } from '../utils/config';
+import type { Config } from '../types/index.js';
+import { loadConfig } from '../utils/config.js';
 
 export type HookEvent =
   | 'afterClone'

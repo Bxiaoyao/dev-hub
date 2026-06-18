@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { SizeInfo } from '../types';
+import type { SizeInfo } from '../types/index.js';
 import { runHook } from './hooks.js';
 
 const CLEANABLE_DIRS = ['node_modules', 'dist', '.next', 'build', '.turbo', '.cache', 'out'];

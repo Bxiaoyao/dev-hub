@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import YAML from 'yaml';
-import type { Project, ExportData, ExportedProject, Config } from '../types/index';
+import type { Project, ExportData, ExportedProject, Config } from '../types/index.js';
 
 export async function exportProjectsToFile(
   projects: Project[],

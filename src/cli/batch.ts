@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
 import { execa } from 'execa';
 
 export async function batchAction(

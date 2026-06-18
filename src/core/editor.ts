@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import type { Config } from '../types/index';
+import type { Config } from '../types/index.js';
 
 const EDITOR_COMMANDS: Record<string, string> = {
   cursor: 'cursor',

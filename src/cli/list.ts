@@ -1,7 +1,7 @@
 import Table from 'cli-table3';
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
 
 export async function listProjects(options: {
   json?: boolean;

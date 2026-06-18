@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
-import { exportProjectsToFile } from '../core/export';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
+import { exportProjectsToFile } from '../core/export.js';
 
 export async function exportProjects(options: {
   output: string;

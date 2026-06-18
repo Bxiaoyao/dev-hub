@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
-import { getGitStatus } from '../core/git';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
+import { getGitStatus } from '../core/git.js';
 import fs from 'fs/promises';
 import path from 'path';
 

@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
-import { getBranches, getRecentCommits } from '../core/git';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
+import { getBranches, getRecentCommits } from '../core/git.js';
 
 export async function showProjectInfo(projectName: string): Promise<void> {
   const config = await initConfig();

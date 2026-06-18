@@ -1,5 +1,5 @@
 import { simpleGit } from 'simple-git';
-import type { BranchInfo, Config } from '../types/index';
+import type { BranchInfo, Config } from '../types/index.js';
 import { execSync } from 'child_process';
 
 // 配置 simple-git 选项

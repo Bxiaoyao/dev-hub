@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import fg from 'fast-glob';
-import type { Config, Project } from '../types/index';
+import type { Config, Project } from '../types/index.js';
 import { getGitInfo, getGitStatus } from './git.js';
 
 export async function scanProjects(config: Config): Promise<Project[]> {

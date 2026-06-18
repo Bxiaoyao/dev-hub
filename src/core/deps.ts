@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { execa } from 'execa';
-import type { DependencyInfo, OutdatedPackage } from '../types';
+import type { DependencyInfo, OutdatedPackage } from '../types/index.js';
 
 export async function getDependencyInfo(projectPath: string): Promise<DependencyInfo | null> {
   try {

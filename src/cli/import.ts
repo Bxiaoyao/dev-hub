@@ -1,8 +1,8 @@
 import path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
-import { loadExportFile } from '../core/export';
-import { importFromExport } from '../core/import';
+import { loadExportFile } from '../core/export.js';
+import { importFromExport } from '../core/import.js';
 
 export async function importProjects(options: {
   file: string;

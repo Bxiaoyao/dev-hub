@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import type { Project } from '../types';
+import type { Project } from '../types/index.js';
 
 const DB_PATH = path.join(os.homedir(), '.devhub', 'cache', 'devhub.db');
 

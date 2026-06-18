@@ -1,6 +1,6 @@
 import path from 'path';
 import { execa } from 'execa';
-import type { ExportData, ExportedProject, Config } from '../types/index';
+import type { ExportData, ExportedProject, Config } from '../types/index.js';
 import { cloneRepo } from './git.js';
 import { loadConfig, getConfigDir } from '../utils/config.js';
 

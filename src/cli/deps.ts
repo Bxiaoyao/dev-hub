@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { execa } from 'execa';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
 
 export async function depsAction(
   projectName: string,

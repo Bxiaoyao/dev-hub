@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import YAML from 'yaml';
 import { execa } from 'execa';
-import type { Project } from '../types';
+import type { Project } from '../types/index.js';
 
 const SNAPSHOTS_DIR = path.join(os.homedir(), '.devhub', 'snapshots');
 

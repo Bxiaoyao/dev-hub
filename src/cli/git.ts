@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
-import { pull, fetchAll } from '../core/git';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
+import { pull, fetchAll } from '../core/git.js';
 
 export async function gitAction(
   projectName: string,

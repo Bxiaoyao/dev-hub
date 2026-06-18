@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import type { Config } from '../types/index';
+import type { Config } from '../types/index.js';
 
 const TERMINAL_COMMANDS: Record<string, { app: string; args: string[] }> = {
   terminal: { app: 'Terminal', args: [] },

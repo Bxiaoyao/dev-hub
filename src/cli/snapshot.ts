@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
-import { saveSnapshot, loadSnapshot, listSnapshots, deleteSnapshot } from '../core/snapshot';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
+import { saveSnapshot, loadSnapshot, listSnapshots, deleteSnapshot } from '../core/snapshot.js';
 
 export async function snapshotAction(
   subcommand: string,

@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { initConfig } from '../utils/config';
-import { scanProjects } from '../core/scanner';
-import { openInEditor, getEditor } from '../core/editor';
+import { initConfig } from '../utils/config.js';
+import { scanProjects } from '../core/scanner.js';
+import { openInEditor, getEditor } from '../core/editor.js';
 
 export async function openProject(
   projectName?: string,
