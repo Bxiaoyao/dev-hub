@@ -116,7 +116,7 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
   return (
     <div
       className={`relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md cursor-pointer group flex flex-col transition-colors ${
-        selected ? 'ring-2 ring-brand-500 bg-brand-50/50 dark:bg-brand-900/10' : ''
+        selected ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''
       }`}
       onClick={handleCardClick}
     >
@@ -151,7 +151,7 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
                 )}
               </div>
             </Tooltip>
-            <div className={`p-2 rounded-lg ${project.packageManager ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            <div className={`p-2 rounded-lg ${project.packageManager ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 {project.isGit ? (
                   <>
@@ -234,7 +234,7 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
           <button
             onClick={handleOpenEditor}
             disabled={loading !== null}
-            className="flex-1 flex justify-center items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors shadow-sm disabled:opacity-50"
+            className="flex-1 flex justify-center items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm disabled:opacity-50"
           >
             {loading === 'open' ? (
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

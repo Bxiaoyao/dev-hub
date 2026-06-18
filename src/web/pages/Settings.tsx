@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api';
+import { useToast } from '../components/Toast';
 import type { Config } from '../lib/types';
 
 interface SettingsProps {
@@ -10,6 +11,7 @@ export function Settings({ onBack }: SettingsProps) {
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadConfig();
@@ -31,9 +33,10 @@ export function Settings({ onBack }: SettingsProps) {
     setSaving(true);
     try {
       await apiClient.updateConfig(config);
-      alert('设置已保存！');
+      showToast('设置已保存！', 'success');
     } catch (error) {
       console.error('Failed to save config:', error);
+      showToast('保存设置失败', 'error');
     } finally {
       setSaving(false);
     }
@@ -42,7 +45,7 @@ export function Settings({ onBack }: SettingsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -56,7 +59,7 @@ export function Settings({ onBack }: SettingsProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in">
+    <div className="max-w-2xl mx-auto animate-fade-in pb-24">
       {/* 返回按钮 */}
       <button
         onClick={onBack}
@@ -91,7 +94,7 @@ export function Settings({ onBack }: SettingsProps) {
                     editor: { ...config.editor, default: e.target.value },
                   })
                 }
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               >
                 <option value="cursor">Cursor</option>
                 <option value="code">VS Code</option>
@@ -108,7 +111,7 @@ export function Settings({ onBack }: SettingsProps) {
                     terminal: { ...config.terminal, default: e.target.value },
                   })
                 }
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               >
                 <option value="terminal">系统自带</option>
                 <option value="iterm2">iTerm2</option>
@@ -151,7 +154,7 @@ export function Settings({ onBack }: SettingsProps) {
                     },
                   })
                 }
-                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="useSSH" className="text-sm text-slate-700 dark:text-slate-300">
                 使用 SSH 密钥认证（推荐）
@@ -188,7 +191,7 @@ export function Settings({ onBack }: SettingsProps) {
                         },
                       })
                     }
-                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   />
                 </div>
 
@@ -214,7 +217,7 @@ export function Settings({ onBack }: SettingsProps) {
                         },
                       })
                     }
-                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     对于 GitHub，推荐使用 Personal Access Token (PAT) 而非密码
@@ -238,7 +241,7 @@ export function Settings({ onBack }: SettingsProps) {
                     },
                   })
                 }
-                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="rememberCredentials" className="text-sm text-slate-700 dark:text-slate-300">
                 记住凭据（保存到配置文件）
@@ -269,7 +272,7 @@ export function Settings({ onBack }: SettingsProps) {
                 },
               })
             }
-            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm font-mono h-24 focus:ring-2 focus:ring-brand-500 outline-none transition-all resize-none"
+            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm font-mono h-24 focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
           />
           <div className="mt-2 flex items-center gap-2">
             <label className="text-sm text-slate-600 dark:text-slate-400">扫描深度:</label>
@@ -285,13 +288,16 @@ export function Settings({ onBack }: SettingsProps) {
                   },
                 })
               }
-              className="w-16 border border-slate-300 dark:border-slate-600 rounded p-1 text-center bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+              className="w-16 border border-slate-300 dark:border-slate-600 rounded p-1 text-center bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
         </section>
 
-        {/* 保存按钮 */}
-        <div className="pt-4 flex justify-end gap-3">
+      </div>
+
+      {/* 底部操作栏 — 固定显示，避免被页面内容遮挡 */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-700">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex justify-end gap-3">
           <button
             onClick={onBack}
             className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -301,7 +307,7 @@ export function Settings({ onBack }: SettingsProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
           >
             {saving && (
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

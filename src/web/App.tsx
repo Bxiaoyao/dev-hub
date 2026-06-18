@@ -57,7 +57,7 @@ export default function App() {
             <div className="flex items-center gap-6">
               <button
                 onClick={() => setPage('list')}
-                className="flex items-center gap-2 text-brand-600 dark:text-brand-500 font-bold text-xl hover:text-brand-700 dark:hover:text-brand-400 transition-colors"
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-500 font-bold text-xl hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
               >
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -103,7 +103,7 @@ export default function App() {
                   placeholder="搜索项目、分支..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 text-sm bg-slate-100 dark:bg-slate-900 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 rounded-md outline-none transition-all dark:text-white placeholder-slate-400"
+                  className="w-full pl-9 pr-4 py-1.5 text-sm bg-slate-100 dark:bg-slate-900 border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 rounded-md outline-none transition-all dark:text-white placeholder-slate-400"
                 />
               </div>
 
@@ -136,7 +136,7 @@ export default function App() {
                   <button
                     onClick={() => setTheme('auto')}
                     className={`p-1.5 rounded transition-all ${theme === 'auto'
-                      ? 'bg-white dark:bg-slate-800 shadow-sm text-brand-500'
+                      ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-500'
                       : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                       }`}
                   >
@@ -167,7 +167,7 @@ export default function App() {
                 <button
                   onClick={() => setPage('settings')}
                   className={`p-2 rounded-md transition-colors ${page === 'settings'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >

@@ -30,6 +30,8 @@ export const apiClient = {
     return api<any[]>(`/projects${queryString ? `?${queryString}` : ''}`);
   },
 
+  scanProjects: () => api<{ success: boolean; count: number }>('/projects/scan', { method: 'POST' }),
+
   getProject: (id: string) => api<any>(`/projects/${encodeURIComponent(id)}`),
 
   openProject: (id: string, editor?: string) =>

@@ -69,7 +69,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
             <button
               onClick={() => handleBatchAction('pull')}
               disabled={running}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="18" cy="18" r="3" />
@@ -85,7 +85,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
             <button
               onClick={() => openModal('createBranch')}
               disabled={running}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="6" y1="3" x2="6" y2="15" />
@@ -105,7 +105,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
             <button
               onClick={() => handleBatchAction('install')}
               disabled={running}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -118,7 +118,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
             <button
               onClick={() => openModal('upgrade')}
               disabled={running}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -137,7 +137,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
             <button
               onClick={() => openModal('commit')}
               disabled={running}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="1" />
@@ -164,7 +164,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
         </Tooltip>
 
         {running && !jobId && (
-          <span className="text-brand-600 animate-pulse text-sm ml-2">
+          <span className="text-blue-600 animate-pulse text-sm ml-2">
             正在执行 {action}...
           </span>
         )}

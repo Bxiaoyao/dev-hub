@@ -81,7 +81,7 @@ export function SearchBar({
             onClick={() => onViewModeChange('card')}
             className={`p-1 rounded transition-all ${
               viewMode === 'card'
-                ? 'bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400'
+                ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="卡片视图"
@@ -97,7 +97,7 @@ export function SearchBar({
             onClick={() => onViewModeChange('table')}
             className={`p-1 rounded transition-all ${
               viewMode === 'table'
-                ? 'bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400'
+                ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="列表视图"

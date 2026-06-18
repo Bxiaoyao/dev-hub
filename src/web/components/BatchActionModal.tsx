@@ -69,7 +69,7 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
                 value={packageName}
                 onChange={(e) => setPackageName(e.target.value)}
                 placeholder="例如: react, lodash, @types/node"
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 autoFocus
               />
             </div>
@@ -82,12 +82,12 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
                 value={packageVersion}
                 onChange={(e) => setPackageVersion(e.target.value)}
                 placeholder="留空则升级到最新版本，例如: 18.0.0, ^2.0.0"
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                将对 <span className="font-semibold text-brand-600">{selectedCount}</span> 个项目执行：
+                将对 <span className="font-semibold text-blue-600">{selectedCount}</span> 个项目执行：
               </p>
               <code className="mt-2 block text-sm bg-white dark:bg-slate-800 px-3 py-2 rounded border border-slate-200 dark:border-slate-700 font-mono">
                 pnpm update {packageName || '{包名}'}{packageVersion && `@${packageVersion}`}
@@ -108,13 +108,13 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
                 value={branchName}
                 onChange={(e) => setBranchName(e.target.value)}
                 placeholder="例如: upgrade/react-18, feature/new-ui"
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 autoFocus
               />
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                将在 <span className="font-semibold text-brand-600">{selectedCount}</span> 个项目中创建并切换到新分支：
+                将在 <span className="font-semibold text-blue-600">{selectedCount}</span> 个项目中创建并切换到新分支：
               </p>
               <code className="mt-2 block text-sm bg-white dark:bg-slate-800 px-3 py-2 rounded border border-slate-200 dark:border-slate-700 font-mono">
                 git checkout -b {branchName || '{分支名}'}
@@ -143,13 +143,13 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
                 value={branchName}
                 onChange={(e) => setBranchName(e.target.value)}
                 placeholder="例如: main, develop, feature/xxx"
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 autoFocus
               />
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                将对 <span className="font-semibold text-brand-600">{selectedCount}</span> 个项目执行切换分支：
+                将对 <span className="font-semibold text-blue-600">{selectedCount}</span> 个项目执行切换分支：
               </p>
               <code className="mt-2 block text-sm bg-white dark:bg-slate-800 px-3 py-2 rounded border border-slate-200 dark:border-slate-700 font-mono">
                 git checkout {branchName || '{分支名}'}
@@ -177,14 +177,14 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
                 value={commitMessage}
                 onChange={(e) => setCommitMessage(e.target.value)}
                 placeholder="例如: chore: upgrade react to 18.0.0"
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                 rows={3}
                 autoFocus
               />
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                将对 <span className="font-semibold text-brand-600">{selectedCount}</span> 个项目执行提交
+                将对 <span className="font-semibold text-blue-600">{selectedCount}</span> 个项目执行提交
               </p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
           <div className="space-y-4">
             <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                确定要将 <span className="font-semibold text-brand-600">{selectedCount}</span> 个项目推送到远程仓库吗？
+                确定要将 <span className="font-semibold text-blue-600">{selectedCount}</span> 个项目推送到远程仓库吗？
               </p>
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -229,7 +229,7 @@ export function BatchActionModal({ action, selectedCount, onConfirm, onCancel }:
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             确认执行
           </button>

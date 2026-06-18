@@ -22,6 +22,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   const [filter, setFilter] = useState<string>('all');
   const [sort, setSort] = useState<string>('recent');
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const [scanning, setScanning] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('devhub-view-mode') as ViewMode) || 'card';
@@ -79,10 +80,22 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
     setSelectedProjects(new Set());
   };
 
+  const handleScan = async () => {
+    try {
+      setScanning(true);
+      await apiClient.scanProjects();
+      await loadProjects();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setScanning(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -115,20 +128,33 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
           <p className="text-sm text-slate-500 mt-1">管理您本地所有的开发项目，切换分支或同步配置。</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm">
-            <svg className="w-4 h-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled={scanning}>
+            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
             导出环境配置
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            扫描目录
+          <button
+            onClick={handleScan}
+            disabled={scanning}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors text-sm font-medium shadow-sm disabled:cursor-not-allowed"
+          >
+            {scanning ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                扫描中...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                扫描目录
+              </>
+            )}
           </button>
         </div>
       </div>

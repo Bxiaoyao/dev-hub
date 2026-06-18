@@ -138,6 +138,17 @@ projectsRouter.post('/:id/terminal', async (req, res) => {
   }
 });
 
+// Scan for projects (force rescan)
+projectsRouter.post('/scan', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const projects = await scanProjects(config);
+    res.json({ success: true, count: projects.length });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
 // Get project size
 projectsRouter.get('/:id/size', async (req, res) => {
   try {

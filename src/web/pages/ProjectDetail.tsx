@@ -86,7 +86,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -100,7 +100,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
       {/* 面包屑导航 */}
       <nav className="flex text-sm text-slate-500 mb-6 gap-2 items-center">
         <Tooltip content="返回工作区">
-          <button onClick={onBack} className="hover:text-brand-600 flex items-center gap-1 transition-colors">
+          <button onClick={onBack} className="hover:text-blue-600 flex items-center gap-1 transition-colors">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
@@ -117,7 +117,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
       {/* 头部 Hero 区域 */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-brand-50 dark:bg-brand-900/30 rounded-xl text-brand-600 dark:text-brand-400 border border-brand-100 dark:border-brand-800">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400 border border-brand-100 dark:border-brand-800">
             <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="4" />
               <path d="M1.05 12H7m10.95 12H17m0-12h5.95M12 1.05V7m0 10.95V22.95" />
@@ -200,7 +200,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-sm text-slate-500">包管理器</span>
-                <span className="text-sm font-medium bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 px-2 py-0.5 rounded">
+                <span className="text-sm font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-brand-300 px-2 py-0.5 rounded">
                   {project.packageManager || '-'}
                 </span>
               </div>
@@ -227,7 +227,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                 依赖管理
               </h3>
               {project.packageManager && (
-                <button className="text-xs text-brand-600 hover:underline">查看 package.json</button>
+                <button className="text-xs text-blue-600 hover:underline">查看 package.json</button>
               )}
             </div>
 
@@ -236,9 +236,9 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                 <button
                   onClick={() => handleAction('pull')}
                   disabled={actionLoading !== null}
-                  className="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors group disabled:opacity-50"
+                  className="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-colors group disabled:opacity-50"
                 >
-                  <svg className="w-5 h-5 mb-1 text-slate-400 group-hover:text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-5 h-5 mb-1 text-slate-400 group-hover:text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="18" cy="18" r="3" />
                     <circle cx="6" cy="6" r="3" />
                     <path d="M13 6h3a2 2 0 0 1 2 2v7" />
@@ -251,9 +251,9 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                 <button
                   onClick={() => handleAction('fetch')}
                   disabled={actionLoading !== null}
-                  className="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors group disabled:opacity-50"
+                  className="flex flex-col items-center justify-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-colors group disabled:opacity-50"
                 >
-                  <svg className="w-5 h-5 mb-1 text-slate-400 group-hover:text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-5 h-5 mb-1 text-slate-400 group-hover:text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="23 4 23 10 17 10" />
                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                   </svg>
@@ -272,7 +272,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                       <span className="text-sm w-24 truncate">{item.name}</span>
                       <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${item.cleanable ? 'bg-red-400' : 'bg-brand-500'}`}
+                          className={`h-full rounded-full ${item.cleanable ? 'bg-red-400' : 'bg-blue-500'}`}
                           style={{ width: `${Math.min((item.size / data.size.total) * 100, 100)}%` }}
                         />
                       </div>
@@ -343,19 +343,19 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                   key={branch.name}
                   className={`flex items-center justify-between p-3 rounded-lg cursor-pointer group transition-colors ${
                     branch.isCurrent
-                      ? 'bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800/50'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border border-brand-100 dark:border-brand-800/50'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
                   }`}
                   onClick={() => !branch.isCurrent && !branch.isRemote && handleCheckout(branch.name)}
                 >
                   <div className="flex items-center gap-3">
                     {branch.isCurrent && (
-                      <svg className="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
                     {!branch.isCurrent && <div className="w-4 h-4" />}
-                    <span className={`font-mono text-sm ${branch.isCurrent ? 'font-bold text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`font-mono text-sm ${branch.isCurrent ? 'font-bold text-blue-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>
                       {branch.name}
                     </span>
                     {branch.isRemote && (
@@ -372,7 +372,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                     </span>
                   ) : !branch.isRemote && (
                     <Tooltip content="切换到此分支">
-                      <button className="text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-brand-50 dark:bg-brand-900/30 rounded">
+                      <button className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded">
                         切换
                       </button>
                     </Tooltip>
@@ -399,7 +399,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                   const message = parts.slice(1).join(' ');
                   return (
                     <div key={i} className="relative">
-                      <div className={`absolute -left-6 top-1 w-4 h-4 bg-white dark:bg-slate-800 border-2 ${i === 0 ? 'border-brand-500' : 'border-slate-300 dark:border-slate-600'} rounded-full`} />
+                      <div className={`absolute -left-6 top-1 w-4 h-4 bg-white dark:bg-slate-800 border-2 ${i === 0 ? 'border-blue-500' : 'border-slate-300 dark:border-slate-600'} rounded-full`} />
                       <div className="text-sm font-medium text-slate-900 dark:text-white">{message}</div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                         <Tooltip content="提交哈希">
