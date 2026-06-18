@@ -14,6 +14,8 @@ export interface ProjectGroup {
 
 /** 按项目所在父目录分组，组内保持原顺序 */
 export function groupProjectsByParent(projects: Project[]): ProjectGroup[] {
+  if (!Array.isArray(projects)) return [];
+
   const map = new Map<string, Project[]>();
 
   for (const project of projects) {

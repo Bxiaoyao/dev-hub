@@ -77,6 +77,14 @@ function Build-Project {
   Write-Ok '构建完成'
 }
 
+function Clear-ProjectsCache {
+  $cacheFile = Join-Path $env:USERPROFILE '.devhub\cache\projects.json'
+  if (Test-Path $cacheFile) {
+    Remove-Item $cacheFile -Force
+  }
+  Write-Ok '已清除项目列表缓存（重启后将重新扫描）'
+}
+
 function Stop-Service {
   if (Test-Path $PidFile) {
     $pid = Get-Content $PidFile | Select-Object -First 1
@@ -137,6 +145,7 @@ switch ($Command) {
     Pull-Latest
     Install-Deps
     Build-Project
+    Clear-ProjectsCache
     Start-Service
     Write-Ok "更新完成！访问 http://localhost:$Port"
   }

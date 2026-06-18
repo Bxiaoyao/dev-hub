@@ -134,37 +134,15 @@ build_project() {
   log_ok "构建完成"
 }
 
+clear_projects_cache() {
+  rm -f "${HOME}/.devhub/cache/projects.json" 2>/dev/null || true
+  log_ok "已清除项目列表缓存（重启后将重新扫描）"
+}
+
 write_pm2_ecosystem() {
   cd "$INSTALL_DIR"
-  mkdir -p "$HOME/.devhub/logs"
-  local log_dir="$HOME/.devhub/logs"
-  if [[ "$IS_WINDOWS" -eq 1 ]]; then
-    log_dir="${HOME}/.devhub/logs"
-  fi
-  cat > "$INSTALL_DIR/ecosystem.config.json" <<EOF
-{
-  "apps": [
-    {
-      "name": "${PM2_APP_NAME}",
-      "script": "dist/index.js",
-      "args": "--no-open --port ${PORT}",
-      "cwd": "${INSTALL_DIR}",
-      "interpreter": "node",
-      "watch": false,
-      "autorestart": true,
-      "max_restarts": 3,
-      "restart_delay": 3000,
-      "env": {
-        "NODE_ENV": "production"
-      },
-      "time": true,
-      "log_date_format": "YYYY-MM-DD HH:mm:ss",
-      "error_file": "${log_dir}/error.log",
-      "out_file": "${log_dir}/out.log"
-    }
-  ]
-}
-EOF
+  mkdir -p "$HOME/.devhub/logs" 2>/dev/null || true
+  node "$INSTALL_DIR/scripts/write-ecosystem.mjs" "$INSTALL_DIR" "$PORT"
   log_ok "已写入 PM2 配置"
 }
 
@@ -209,6 +187,7 @@ cmd_update() {
   pull_latest
   install_deps
   build_project
+  clear_projects_cache
   start_pm2
   echo ""
   log_ok "更新完成！访问 http://localhost:${PORT}"

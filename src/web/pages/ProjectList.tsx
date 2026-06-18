@@ -76,8 +76,8 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
     try {
       setLoading(true);
       const result = await apiClient.getProjects({ filter, sort, search });
-      setProjects(result.projects);
-      setListMeta(result.meta);
+      setProjects(result.projects ?? []);
+      setListMeta(result.meta ?? null);
       setError(null);
     } catch (err) {
       setError((err as Error).message);

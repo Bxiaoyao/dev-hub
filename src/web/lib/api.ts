@@ -30,21 +30,42 @@ export interface ProjectsListResponse {
   meta: ProjectsListMeta;
 }
 
+const DEFAULT_LIST_META: ProjectsListMeta = {
+  cachedAt: null,
+  fromCache: false,
+  refreshing: false,
+};
+
+function normalizeProjectsResponse(
+  raw: ProjectsListResponse | import('./types').Project[]
+): ProjectsListResponse {
+  if (Array.isArray(raw)) {
+    return { projects: raw, meta: DEFAULT_LIST_META };
+  }
+  return {
+    projects: Array.isArray(raw?.projects) ? raw.projects : [],
+    meta: raw?.meta ?? DEFAULT_LIST_META,
+  };
+}
+
 export const apiClient = {
   // Projects
-  getProjects: (params?: {
+  getProjects: async (params?: {
     filter?: string;
     sort?: string;
     search?: string;
     refresh?: boolean;
-  }) => {
+  }): Promise<ProjectsListResponse> => {
     const query = new URLSearchParams();
     if (params?.filter) query.set('filter', params.filter);
     if (params?.sort) query.set('sort', params.sort);
     if (params?.search) query.set('search', params.search);
     if (params?.refresh) query.set('refresh', 'true');
     const queryString = query.toString();
-    return api<ProjectsListResponse>(`/projects${queryString ? `?${queryString}` : ''}`);
+    const raw = await api<ProjectsListResponse | import('./types').Project[]>(
+      `/projects${queryString ? `?${queryString}` : ''}`
+    );
+    return normalizeProjectsResponse(raw);
   },
 
   scanProjects: () =>
