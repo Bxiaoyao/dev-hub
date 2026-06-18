@@ -5,7 +5,10 @@
 ## 环境要求
 
 - **Node.js** >= 18
-- **操作系统**：macOS / Linux（本地开发工具，默认监听 `localhost`）
+- **Git**
+- **操作系统**：macOS / Linux / Windows（本地工具，默认监听 `localhost`）
+
+> Windows 推荐使用 PowerShell 执行 `install.ps1`；macOS / Linux 使用 `install.sh`。Git Bash 也可运行 `install.sh`。
 
 ## 快速开始
 
@@ -39,6 +42,130 @@ npm run dev:all
 
 ## 打包与部署
 
+### GitHub 一键部署（推荐）
+
+从 GitHub 拉取安装脚本，自动完成：克隆仓库 → 安装依赖 → 构建 → 启动服务。  
+默认安装目录为 `~/dev-hub`（Windows：`%USERPROFILE%\dev-hub`），默认端口 `3200`。
+
+#### macOS / Linux
+
+```bash
+# 一键安装
+curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- install
+
+# 一键更新（发布新版本后执行）
+curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- update
+```
+
+已在安装目录内时，可本地执行：
+
+```bash
+cd ~/dev-hub
+./scripts/install.sh install    # 首次安装
+./scripts/install.sh update     # 更新
+./scripts/install.sh status     # 查看状态
+./scripts/install.sh logs       # 查看日志
+./scripts/install.sh restart    # 重启
+./scripts/install.sh stop       # 停止
+```
+
+| 子命令 | 说明 |
+|--------|------|
+| `install` | 首次安装（克隆、构建、PM2 启动） |
+| `update` | 拉取最新代码并重新构建、重启 |
+| `status` | 查看运行状态 |
+| `logs` | 查看日志 |
+| `restart` | 重启服务 |
+| `stop` | 停止服务 |
+
+#### Windows（PowerShell）
+
+```powershell
+# 一键安装（下载脚本后执行 install）
+iwr -useb https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.ps1 -OutFile $env:TEMP\devhub-install.ps1
+& $env:TEMP\devhub-install.ps1 install
+
+# 一键更新
+& $env:USERPROFILE\dev-hub\scripts\install.ps1 update
+```
+
+已在安装目录内时：
+
+```powershell
+cd $env:USERPROFILE\dev-hub
+.\scripts\install.ps1 install
+.\scripts\install.ps1 update
+.\scripts\install.ps1 status
+.\scripts\install.ps1 stop
+```
+
+| 子命令 | 说明 |
+|--------|------|
+| `install` | 首次安装（克隆、构建、后台启动） |
+| `update` | 拉取最新代码并重新构建、重启 |
+| `status` | 查看运行状态 |
+| `stop` | 停止服务 |
+
+#### 可选环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `DEVHUB_INSTALL_DIR` | `~/dev-hub` | 安装目录 |
+| `DEVHUB_PORT` | `3200` | 服务端口 |
+| `DEVHUB_BRANCH` | `main` | Git 分支 |
+| `DEVHUB_REPO` | `https://github.com/Bxiaoyao/dev-hub.git` | 仓库地址 |
+
+示例（指定端口 3300）：
+
+```bash
+# macOS / Linux
+DEVHUB_PORT=3300 curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- install
+```
+
+```powershell
+# Windows
+$env:DEVHUB_PORT = '3300'
+& $env:TEMP\devhub-install.ps1 install
+```
+
+**私有仓库**：无法通过 `curl` / `irm` 拉脚本时，先 `git clone` 到安装目录，再执行本地 `install` 子命令。
+
+每台机器的 `~/.devhub/config.yaml`（扫描目录等）相互独立，互不影响。
+
+### 卸载 / 清理
+
+#### macOS / Linux
+
+```bash
+# 1. 停止服务
+curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- stop
+# 或本地：~/dev-hub/scripts/install.sh stop
+
+# 2. 移除 PM2 进程（若使用 PM2 安装）
+pm2 delete devhub 2>/dev/null; pm2 save 2>/dev/null
+
+# 3. 删除安装目录
+rm -rf ~/dev-hub
+
+# 4.（可选）删除用户配置与缓存
+rm -rf ~/.devhub
+```
+
+#### Windows（PowerShell）
+
+```powershell
+# 1. 停止服务
+& $env:USERPROFILE\dev-hub\scripts\install.ps1 stop
+
+# 2. 删除安装目录（安装失败时可单独执行此步后重装）
+Remove-Item -Recurse -Force $env:USERPROFILE\dev-hub
+
+# 3.（可选）删除用户配置与缓存
+Remove-Item -Recurse -Force $env:USERPROFILE\.devhub
+```
+
+安装失败需重装时，先删除安装目录（Windows 步骤 2 / macOS·Linux 步骤 3），再重新运行一键安装命令。
+
 ### 本地生产运行
 
 ```bash
@@ -64,61 +191,6 @@ npm run stop:daemon     # 停止服务
 ```
 
 也可使用 `./scripts/devhub-start.sh`（支持 `start` / `stop` / `restart` / `logs` / `status` 等命令）。详见 [部署运行文档](docs/DEPLOYMENT.md)。
-
-### 多台电脑统一部署（方案 B）
-
-每台电脑本地跑一份 DevHub（负责扫本机目录、执行 Git/编辑器命令），用同一条脚本安装和更新。
-
-**首次安装**（公开仓库，默认安装到 `~/dev-hub`）：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- install
-```
-
-**发布新版本后，三台各执行一次更新**：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- update
-```
-
-已在仓库目录内时，也可本地执行：
-
-```bash
-./scripts/install.sh update
-# 或
-npm run update
-```
-
-常用子命令：`install` / `update` / `status` / `logs` / `restart` / `stop`
-
-可选环境变量：
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `DEVHUB_INSTALL_DIR` | `~/dev-hub` | 安装目录 |
-| `DEVHUB_PORT` | `3200` | 服务端口 |
-| `DEVHUB_BRANCH` | `main` | Git 分支 |
-
-**私有仓库**：无法用 `curl` 拉脚本时，先 `git clone git@github.com:Bxiaoyao/dev-hub.git ~/dev-hub`，再执行 `./scripts/install.sh install`。
-
-### Windows 安装
-
-推荐使用 PowerShell（无需 C++ 编译环境）：
-
-```powershell
-irm https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.ps1 | iex
-```
-
-若已存在失败安装目录，先删除再重装：
-
-```powershell
-Remove-Item -Recurse -Force $env:USERPROFILE\dev-hub
-irm https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.ps1 | iex
-```
-
-也可在 Git Bash 中使用 `install.sh`（需 Node.js + Git）。
-
-每台机器的 `~/.devhub/config.yaml`（扫描目录等）相互独立，互不影响。
 
 ### 全局安装 CLI
 
