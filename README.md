@@ -10,7 +10,22 @@
 
 > Windows 推荐使用 PowerShell 执行 `install.ps1`；macOS / Linux 使用 `install.sh`。Git Bash 也可运行 `install.sh`。
 
-## 快速开始
+## 推荐工作流（开发 vs 运行）
+
+| | 开发调试（本地克隆仓库） | 日常使用（方案 A 安装实例） |
+|--|--|--|
+| **目录** | 任意路径，如 `~/project/.../项目管理` | 固定 `~/dev-hub` |
+| **用途** | 改代码、调试功能 | 扫本机项目、日常管理 |
+| **访问地址** | http://localhost:5173（`dev:all`） | http://localhost:3200 |
+| **更新方式** | `git pull` / 自行 merge | `curl ... \| bash -s -- update` |
+
+**要点：**
+
+- `curl ... install` / `update` 只作用于 **`~/dev-hub`**，不会自动找到你的开发仓库。
+- 开发时**不要用 3200 端口**，避免与 `~/dev-hub` 冲突；本地开发默认使用 **3300**（API）+ **5173**（前端）。
+- 发布流程：开发仓库 `git push` → 各机器对 `~/dev-hub` 执行一键 `update`。
+
+## 快速开始（开发仓库）
 
 ```bash
 # 安装依赖
@@ -19,11 +34,12 @@ npm install
 # 构建（首次运行或前端有改动后需要执行）
 npm run build
 
-# 启动 Web UI（默认 http://localhost:3200，自动打开浏览器）
+# 启动 Web UI（开发端口 3300，避免与 ~/dev-hub 的 3200 冲突）
 npm run dev
 ```
 
-> 服务端通过 Express 托管 `dist/web/` 静态资源。**未执行 `npm run build` 时 Web 界面无法正常显示。**
+> 服务端通过 Express 托管 `dist/web/` 静态资源。**未执行 `npm run build` 时 Web 界面无法正常显示。**  
+> 若已用方案 A 安装 `~/dev-hub`，日常请访问 http://localhost:3200，无需在开发仓库再启一份。
 
 ## 开发模式
 
@@ -36,16 +52,20 @@ npm run dev:all
 | 服务 | 地址 | 说明 |
 |------|------|------|
 | 前端 | http://localhost:5173 | Vite 开发服务器，支持热更新 |
-| 后端 | http://localhost:3200 | Express API，`/api` 请求由 Vite 代理 |
+| 后端 | http://localhost:3300 | Express API（开发端口），`/api` 由 Vite 代理 |
 
-仅调试后端时可使用 `npm run dev:server`；仅调试前端时可使用 `npm run dev:web`（需后端已在 3200 端口运行）。
+仅调试后端时可使用 `npm run dev:server`；仅调试前端时可使用 `npm run dev:web`（需后端已在 3300 端口运行）。
+
+自定义开发 API 端口：`DEVHUB_DEV_PORT=3400 npm run dev:all`
 
 ## 打包与部署
 
 ### GitHub 一键部署（推荐）
 
 从 GitHub 拉取安装脚本，自动完成：克隆仓库 → 安装依赖 → 构建 → 启动服务。  
-默认安装目录为 `~/dev-hub`（Windows：`%USERPROFILE%\dev-hub`），默认端口 `3200`。
+默认安装目录为 `~/dev-hub`（Windows：`%USERPROFILE%\dev-hub`），**运行实例固定使用端口 `3200`**。
+
+> 与上文「开发仓库」分离：开发调试用 3300/5173，日常管理用本节的 `~/dev-hub` + 3200。
 
 #### macOS / Linux
 
@@ -53,9 +73,11 @@ npm run dev:all
 # 一键安装
 curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- install
 
-# 一键更新（发布新版本后执行）
+# 一键更新（发布新版本后，更新 ~/dev-hub 运行实例）
 curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- update
 ```
+
+> 若尚未执行过 `install`，`update` 会报错「未找到 Git 仓库: ~/dev-hub」，请先运行 `install`。
 
 已在安装目录内时，可本地执行：
 

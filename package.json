@@ -8,9 +8,9 @@
     "devhub": "./bin/devhub.mjs"
   },
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "tsx src/index.ts --port ${DEVHUB_DEV_PORT:-3300}",
     "dev:web": "vite",
-    "dev:server": "tsx src/server/index.ts",
+    "dev:server": "tsx src/index.ts --no-open --port ${DEVHUB_DEV_PORT:-3300}",
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
     "build": "tsc && vite build",
     "build:server": "tsc",
