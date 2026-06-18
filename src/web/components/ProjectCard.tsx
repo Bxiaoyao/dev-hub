@@ -4,6 +4,7 @@ import { formatRelativeTime, formatProjectPath } from '../lib/format';
 import { apiClient } from '../lib/api';
 import { useToast } from './Toast';
 import { Tooltip } from './Tooltip';
+import { RepoLinks } from './RepoLinks';
 
 interface ProjectCardProps {
   project: Project;
@@ -203,6 +204,11 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
             <span className={`w-2 h-2 rounded-full ${statusColor}`} />
           </Tooltip>
         </div>
+        {project.isGit && project.remote && (
+          <div className="mb-3">
+            <RepoLinks remote={project.remote} branch={project.branch} variant="inline" />
+          </div>
+        )}
 
         {/* 技术标签 */}
         <div className="flex flex-wrap gap-2 mb-4">

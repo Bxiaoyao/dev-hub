@@ -4,6 +4,7 @@ import { apiClient } from '../lib/api';
 import { formatRelativeTime, formatProjectPath } from '../lib/format';
 import { useToast } from '../components/Toast';
 import { Tooltip } from '../components/Tooltip';
+import { RepoLinks } from '../components/RepoLinks';
 
 interface ProjectDetailProps {
   project: Project;
@@ -205,6 +206,11 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                 <div className="text-sm font-mono bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-100 dark:border-slate-700 break-all text-slate-700 dark:text-slate-300">
                   {project.remote || '-'}
                 </div>
+                {project.remote && (
+                  <div className="mt-2">
+                    <RepoLinks remote={project.remote} branch={project.branch} variant="inline" />
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-sm text-slate-500">包管理器</span>

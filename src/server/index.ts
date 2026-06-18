@@ -3,6 +3,11 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createApiRouter } from './router.js';
+import { initConfig } from '../utils/config.js';
+import {
+  startBackgroundRefresh,
+  warmupProjectsCache,
+} from '../core/project-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +39,9 @@ export async function startServer(options: {
   // Start server
   app.listen(port, () => {
     console.log(`DevHub server running at http://localhost:${port}`);
+
+    warmupProjectsCache(initConfig);
+    startBackgroundRefresh(initConfig);
 
     if (options.open) {
       import('open').then((open) => {

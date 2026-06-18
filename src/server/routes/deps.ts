@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
-import { scanProjects } from '../../core/scanner.js';
+import { findProject } from '../../core/project-store.js';
 import {
   installDependencies,
   upgradePackage,
@@ -17,11 +17,7 @@ depsRouter.post('/install', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -45,11 +41,7 @@ depsRouter.get('/outdated', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -75,11 +67,7 @@ depsRouter.post('/upgrade', async (req, res) => {
     const { packageName, version } = req.body;
 
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -108,11 +96,7 @@ depsRouter.get('/audit', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });

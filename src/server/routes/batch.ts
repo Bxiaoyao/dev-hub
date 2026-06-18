@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
-import { scanProjects } from '../../core/scanner.js';
+import { getProjects } from '../../core/project-store.js';
 import { installDependencies, upgradePackage } from '../../core/deps.js';
 import { pull, fetchAll, commitChanges, push, createAndCheckoutBranch, checkoutBranch } from '../../core/git.js';
 import { cleanMultiple } from '../../core/size.js';
@@ -25,7 +25,7 @@ batchRouter.post('/', async (req, res) => {
     const { action, projectIds, packageName, packageVersion, branchName, commitMessage } = req.body;
 
     const config = await initConfig();
-    const projects = await scanProjects(config);
+    const { projects } = await getProjects(config);
 
     const selectedProjects = projects.filter((p) =>
       projectIds.includes(p.name) || projectIds.includes(p.path)

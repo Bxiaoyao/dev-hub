@@ -1,55 +1,44 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
-import { scanProjects } from '../../core/scanner.js';
+import {
+  applyProjectFilters,
+  findProject,
+  getProjects,
+  refreshProjects,
+} from '../../core/project-store.js';
 import { getProjectSize } from '../../core/size.js';
 import { getBranches, getRecentCommits } from '../../core/git.js';
 import { getDependencyInfo, getOutdatedPackages } from '../../core/deps.js';
 import { openInEditor, getEditor } from '../../core/editor.js';
 import { openTerminal } from '../../core/terminal.js';
+import { getCacheAge } from '../../utils/cache.js';
 
 export const projectsRouter = Router();
 
-// Get all projects
+function parseListQuery(req: { query: Record<string, unknown> }) {
+  const { filter, sort, search, refresh } = req.query;
+  return {
+    filter: typeof filter === 'string' ? filter : undefined,
+    sort: typeof sort === 'string' ? sort : undefined,
+    search: typeof search === 'string' ? search : undefined,
+    refresh: refresh === 'true' || refresh === '1',
+  };
+}
+
+// Get all projects（默认走缓存）
 projectsRouter.get('/', async (req, res) => {
   try {
     const config = await initConfig();
-    const projects = await scanProjects(config);
+    const query = parseListQuery(req);
+    const { projects, meta } = await getProjects(config, {
+      refresh: query.refresh,
+    });
+    const filtered = applyProjectFilters(projects, query);
 
-    const { filter, sort, search } = req.query;
-
-    let filtered = projects;
-
-    // Search filter
-    if (search && typeof search === 'string') {
-      const q = search.toLowerCase();
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.path.toLowerCase().includes(q)
-      );
-    }
-
-    // Category filter
-    if (filter === 'git') {
-      filtered = filtered.filter((p) => p.isGit);
-    } else if (filter === 'recent') {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      filtered = filtered.filter((p) => p.lastModified >= oneWeekAgo);
-    } else if (filter === 'dirty') {
-      filtered = filtered.filter((p) => p.status === 'dirty');
-    }
-
-    // Sort
-    if (sort === 'name') {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === 'branch') {
-      filtered.sort((a, b) => (a.branch || '').localeCompare(b.branch || ''));
-    } else if (sort === 'path') {
-      filtered.sort((a, b) => a.path.localeCompare(b.path));
-    }
-    // 'recent' is default
-
-    res.json(filtered);
+    res.json({
+      projects: filtered,
+      meta,
+    });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -59,18 +48,13 @@ projectsRouter.get('/', async (req, res) => {
 projectsRouter.get('/:id', async (req, res) => {
   try {
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === req.params.id || p.path === req.params.id
-    );
+    const project = await findProject(config, req.params.id);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
 
-    // Get additional details
     const [branches, commits, size, deps, outdated] = await Promise.all([
       project.isGit ? getBranches(project.path) : Promise.resolve([]),
       project.isGit ? getRecentCommits(project.path, 20) : Promise.resolve([]),
@@ -98,11 +82,7 @@ projectsRouter.get('/:id', async (req, res) => {
 projectsRouter.post('/:id/open', async (req, res) => {
   try {
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === req.params.id || p.path === req.params.id
-    );
+    const project = await findProject(config, req.params.id);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -124,11 +104,7 @@ projectsRouter.post('/:id/open', async (req, res) => {
 projectsRouter.post('/:id/terminal', async (req, res) => {
   try {
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === req.params.id || p.path === req.params.id
-    );
+    const project = await findProject(config, req.params.id);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -146,8 +122,13 @@ projectsRouter.post('/:id/terminal', async (req, res) => {
 projectsRouter.post('/scan', async (req, res) => {
   try {
     const config = await initConfig();
-    const projects = await scanProjects(config);
-    res.json({ success: true, count: projects.length });
+    const projects = await refreshProjects(config);
+    const cachedAt = getCacheAge();
+    res.json({
+      success: true,
+      count: projects.length,
+      cachedAt: cachedAt ? new Date(cachedAt).toISOString() : null,
+    });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -157,11 +138,7 @@ projectsRouter.post('/scan', async (req, res) => {
 projectsRouter.get('/:id/size', async (req, res) => {
   try {
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === req.params.id || p.path === req.params.id
-    );
+    const project = await findProject(config, req.params.id);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });

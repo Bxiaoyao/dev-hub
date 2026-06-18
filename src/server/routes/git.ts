@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
-import { scanProjects } from '../../core/scanner.js';
+import { findProject } from '../../core/project-store.js';
 import {
   pull,
   fetchAll,
@@ -10,6 +10,7 @@ import {
   deleteBranch,
   stashAndCheckout,
 } from '../../core/git.js';
+import { getRepoWebInfo } from '../../utils/remote-url.js';
 import { simpleGit } from 'simple-git';
 
 // Git 配置选项，禁用交互式提示
@@ -35,11 +36,7 @@ gitRouter.get('/status', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -63,11 +60,7 @@ gitRouter.post('/pull', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -86,11 +79,7 @@ gitRouter.post('/fetch', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -109,11 +98,7 @@ gitRouter.post('/stash', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -133,11 +118,7 @@ gitRouter.post('/stash-pop', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -159,11 +140,7 @@ gitRouter.post('/checkout', async (req, res) => {
     const { branch, stash } = req.body;
 
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -190,11 +167,7 @@ gitRouter.post('/branch', async (req, res) => {
     const { name } = req.body;
 
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -215,11 +188,7 @@ gitRouter.delete('/branch/:branchName', async (req, res) => {
     const branchName = req.params.branchName;
 
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
@@ -238,32 +207,23 @@ gitRouter.post('/pr', async (req, res) => {
   try {
     const projectId = getProjectId(req);
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project || !project.branch || !project.remote) {
       res.status(400).json({ error: 'Project has no remote or branch' });
       return;
     }
 
-    // Convert git URL to HTTPS
-    let prUrl = project.remote;
-    if (project.remote.startsWith('git@')) {
-      prUrl = project.remote
-        .replace('git@', 'https://')
-        .replace(':', '/')
-        .replace('.git', '');
+    const info = getRepoWebInfo(project.remote, project.branch);
+    if (!info?.mergeRequestUrl) {
+      res.status(400).json({ error: 'Cannot build merge request URL' });
+      return;
     }
-    prUrl = `${prUrl}/pull/new/${project.branch}`;
 
-    // Open in browser
-    const { execa } = await import('execa');
-    await execa('open', [prUrl]);
+    const open = (await import('open')).default;
+    await open(info.mergeRequestUrl);
 
-    res.json({ success: true, url: prUrl });
+    res.json({ success: true, url: info.mergeRequestUrl, repoUrl: info.repoUrl });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -276,11 +236,7 @@ gitRouter.get('/commits', async (req, res) => {
     const count = req.query.count as string | undefined;
 
     const config = await initConfig();
-    const projects = await scanProjects(config);
-
-    const project = projects.find(
-      (p) => p.name === projectId || p.path === projectId
-    );
+    const project = await findProject(config, projectId);
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });

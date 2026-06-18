@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
-import { scanProjects } from '../../core/scanner.js';
+import { getProjects } from '../../core/project-store.js';
 import { exportProjectsToFile } from '../../core/export.js';
 
 export const exportRouter = Router();
@@ -11,7 +11,7 @@ exportRouter.post('/', async (req, res) => {
     const { projectIds, outputPath, includeHooks } = req.body;
 
     const config = await initConfig();
-    let projects = await scanProjects(config);
+    let { projects } = await getProjects(config);
 
     if (projectIds && projectIds.length > 0) {
       projects = projects.filter(

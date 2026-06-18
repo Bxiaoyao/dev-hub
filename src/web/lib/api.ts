@@ -19,18 +19,38 @@ export async function api<T>(
   return response.json();
 }
 
+export interface ProjectsListMeta {
+  cachedAt: string | null;
+  fromCache: boolean;
+  refreshing: boolean;
+}
+
+export interface ProjectsListResponse {
+  projects: import('./types').Project[];
+  meta: ProjectsListMeta;
+}
+
 export const apiClient = {
   // Projects
-  getProjects: (params?: { filter?: string; sort?: string; search?: string }) => {
+  getProjects: (params?: {
+    filter?: string;
+    sort?: string;
+    search?: string;
+    refresh?: boolean;
+  }) => {
     const query = new URLSearchParams();
     if (params?.filter) query.set('filter', params.filter);
     if (params?.sort) query.set('sort', params.sort);
     if (params?.search) query.set('search', params.search);
+    if (params?.refresh) query.set('refresh', 'true');
     const queryString = query.toString();
-    return api<any[]>(`/projects${queryString ? `?${queryString}` : ''}`);
+    return api<ProjectsListResponse>(`/projects${queryString ? `?${queryString}` : ''}`);
   },
 
-  scanProjects: () => api<{ success: boolean; count: number }>('/projects/scan', { method: 'POST' }),
+  scanProjects: () =>
+    api<{ success: boolean; count: number; cachedAt: string | null }>('/projects/scan', {
+      method: 'POST',
+    }),
 
   getProject: (id: string) => api<any>(`/projects/${encodeURIComponent(id)}`),
 

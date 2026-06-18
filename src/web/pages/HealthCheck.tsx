@@ -26,7 +26,7 @@ export function HealthCheck({ onBack }: { onBack: () => void }) {
     setLoading(true);
     try {
       // Get all projects and check each
-      const projects = await apiClient.getProjects();
+      const { projects } = await apiClient.getProjects();
       const healthResults: HealthResult[] = [];
 
       for (const project of projects) {

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Project } from '../lib/types';
-import { apiClient } from '../lib/api';
+import { apiClient, type ProjectsListMeta } from '../lib/api';
 import { groupProjectsByParent } from '../lib/group';
+import { formatRelativeTime } from '../lib/format';
 import { ProjectCard } from '../components/ProjectCard';
 import { ProjectTable } from '../components/ProjectTable';
 import { ProjectGroupSection } from '../components/ProjectGroupSection';
@@ -29,7 +30,9 @@ function loadCollapsedGroups(): Set<string> {
 
 export function ProjectList({ onSelectProject, search: externalSearch, onSearchChange }: ProjectListProps) {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listMeta, setListMeta] = useState<ProjectsListMeta | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [internalSearch, setInternalSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
@@ -72,13 +75,15 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiClient.getProjects({ filter, sort, search });
-      setProjects(data);
+      const result = await apiClient.getProjects({ filter, sort, search });
+      setProjects(result.projects);
+      setListMeta(result.meta);
       setError(null);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [filter, sort, search]);
 
@@ -142,7 +147,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
     }
   };
 
-  if (loading) {
+  if (initialLoading && projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -165,7 +170,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className={`animate-fade-in ${loading && !initialLoading ? 'opacity-80' : ''}`}>
       {/* 页面头部操作区 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
@@ -175,7 +180,15 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
               {projects.length} 个项目
             </span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">管理您本地所有的开发项目，切换分支或同步配置。</p>
+          <p className="text-sm text-slate-500 mt-1 flex items-center gap-1 flex-wrap">
+            <span>管理您本地所有的开发项目，切换分支或同步配置。</span>
+            {listMeta?.cachedAt && (
+              <span className="text-xs text-slate-400">
+                · 更新于 {formatRelativeTime(new Date(listMeta.cachedAt))}
+                {listMeta.refreshing ? ' · 后台刷新中' : listMeta.fromCache ? ' · 缓存' : ''}
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled={scanning}>
@@ -202,7 +215,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                扫描目录
+                重新扫描
               </>
             )}
           </button>
