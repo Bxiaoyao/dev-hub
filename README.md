@@ -101,6 +101,23 @@ npm run update
 
 **私有仓库**：无法用 `curl` 拉脚本时，先 `git clone git@github.com:Bxiaoyao/dev-hub.git ~/dev-hub`，再执行 `./scripts/install.sh install`。
 
+### Windows 安装
+
+推荐使用 PowerShell（无需 C++ 编译环境）：
+
+```powershell
+irm https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.ps1 | iex
+```
+
+若已存在失败安装目录，先删除再重装：
+
+```powershell
+Remove-Item -Recurse -Force $env:USERPROFILE\dev-hub
+irm https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.ps1 | iex
+```
+
+也可在 Git Bash 中使用 `install.sh`（需 Node.js + Git）。
+
 每台机器的 `~/.devhub/config.yaml`（扫描目录等）相互独立，互不影响。
 
 ### 全局安装 CLI

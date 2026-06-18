@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';

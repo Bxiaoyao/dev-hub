@@ -14,13 +14,17 @@
 #   DEVHUB_BRANCH       分支，默认 main
 #   DEVHUB_PORT         端口，默认 3200
 
-set -euo pipefail
+set -eo pipefail
 
 REPO_URL="${DEVHUB_REPO:-https://github.com/Bxiaoyao/dev-hub.git}"
 INSTALL_DIR="${DEVHUB_INSTALL_DIR:-$HOME/dev-hub}"
 BRANCH="${DEVHUB_BRANCH:-main}"
 PORT="${DEVHUB_PORT:-3200}"
 PM2_APP_NAME="devhub"
+IS_WINDOWS=0
+if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] || [[ "$(uname -s 2>/dev/null)" == MSYS* ]]; then
+  IS_WINDOWS=1
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -33,11 +37,13 @@ log_ok()    { echo -e "${GREEN}[OK]${NC} $*"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-# 若脚本在仓库内，优先使用仓库目录
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_from_script="$(cd "$script_dir/.." && pwd)"
-if [[ -d "$repo_from_script/.git" && -f "$repo_from_script/package.json" ]]; then
-  INSTALL_DIR="$repo_from_script"
+# 若脚本在仓库内，优先使用仓库目录（curl 管道执行时跳过）
+if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  repo_from_script="$(cd "$script_dir/.." && pwd)"
+  if [[ -d "$repo_from_script/.git" && -f "$repo_from_script/package.json" ]]; then
+    INSTALL_DIR="$repo_from_script"
+  fi
 fi
 
 require_node() {
@@ -61,10 +67,26 @@ require_git() {
 }
 
 require_pm2() {
-  if ! command -v pm2 &>/dev/null; then
-    log_info "正在全局安装 PM2..."
-    npm install -g pm2
+  if command -v pm2 &>/dev/null; then
+    return 0
   fi
+  if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    log_warn "未检测到 PM2，Windows 将使用 node 直接启动（建议安装: npm install -g pm2）"
+    return 1
+  fi
+  log_info "正在全局安装 PM2..."
+  npm install -g pm2
+}
+
+start_node_direct() {
+  cd "$INSTALL_DIR"
+  log_info "使用 node 启动 DevHub ..."
+  if command -v pm2 &>/dev/null; then
+    pm2 delete "$PM2_APP_NAME" &>/dev/null || true
+  fi
+  nohup node dist/index.js --no-open --port "$PORT" > "$HOME/.devhub/logs/out.log" 2> "$HOME/.devhub/logs/error.log" &
+  sleep 2
+  log_ok "DevHub 已运行: http://localhost:${PORT}"
 }
 
 clone_repo() {
@@ -115,6 +137,10 @@ build_project() {
 write_pm2_ecosystem() {
   cd "$INSTALL_DIR"
   mkdir -p "$HOME/.devhub/logs"
+  local log_dir="$HOME/.devhub/logs"
+  if [[ "$IS_WINDOWS" -eq 1 ]]; then
+    log_dir="${HOME}/.devhub/logs"
+  fi
   cat > "$INSTALL_DIR/ecosystem.config.json" <<EOF
 {
   "apps": [
@@ -133,8 +159,8 @@ write_pm2_ecosystem() {
       },
       "time": true,
       "log_date_format": "YYYY-MM-DD HH:mm:ss",
-      "error_file": "${HOME}/.devhub/logs/error.log",
-      "out_file": "${HOME}/.devhub/logs/out.log"
+      "error_file": "${log_dir}/error.log",
+      "out_file": "${log_dir}/out.log"
     }
   ]
 }
@@ -143,8 +169,12 @@ EOF
 }
 
 start_pm2() {
-  require_pm2
   cd "$INSTALL_DIR"
+  mkdir -p "$HOME/.devhub/logs"
+  if ! require_pm2; then
+    start_node_direct
+    return
+  fi
   write_pm2_ecosystem
   if pm2 describe "$PM2_APP_NAME" &>/dev/null; then
     log_info "重启 PM2 进程 ..."

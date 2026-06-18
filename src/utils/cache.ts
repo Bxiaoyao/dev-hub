@@ -1,123 +1,86 @@
-import Database from 'better-sqlite3';
+import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import fs from 'fs';
 import type { Project } from '../types/index.js';
 
-const DB_PATH = path.join(os.homedir(), '.devhub', 'cache', 'devhub.db');
+const CACHE_DIR = path.join(os.homedir(), '.devhub', 'cache');
+const PROJECTS_CACHE_FILE = path.join(CACHE_DIR, 'projects.json');
+const OPERATIONS_CACHE_FILE = path.join(CACHE_DIR, 'operations.json');
 
-let db: Database.Database | null = null;
-
-function getDb(): Database.Database {
-  if (!db) {
-    const dbDir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
-    db = new Database(DB_PATH);
-    initTables(db);
-  }
-  return db;
+interface ProjectsCacheFile {
+  cachedAt: number;
+  projects: Project[];
 }
 
-function initTables(db: Database.Database) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS projects (
-      path TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      is_git INTEGER DEFAULT 0,
-      branch TEXT,
-      remote TEXT,
-      status TEXT DEFAULT 'unknown',
-      uncommitted_changes INTEGER DEFAULT 0,
-      ahead INTEGER DEFAULT 0,
-      behind INTEGER DEFAULT 0,
-      last_modified INTEGER,
-      package_manager TEXT,
-      has_package_json INTEGER DEFAULT 0,
-      cached_at INTEGER
-    );
+interface OperationRecord {
+  projectPath: string;
+  action: string;
+  success: boolean;
+  message?: string;
+  timestamp: number;
+}
 
-    CREATE TABLE IF NOT EXISTS operation_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      project_path TEXT,
-      action TEXT NOT NULL,
-      success INTEGER DEFAULT 1,
-      message TEXT,
-      timestamp INTEGER
-    );
+function ensureCacheDir(): void {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+}
 
-    CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
-    CREATE INDEX IF NOT EXISTS idx_projects_cached ON projects(cached_at);
-  `);
+function readProjectsCache(): ProjectsCacheFile | null {
+  try {
+    if (!fs.existsSync(PROJECTS_CACHE_FILE)) return null;
+    const raw = fs.readFileSync(PROJECTS_CACHE_FILE, 'utf-8');
+    const data = JSON.parse(raw) as ProjectsCacheFile;
+    return {
+      cachedAt: data.cachedAt,
+      projects: data.projects.map((p) => ({
+        ...p,
+        lastModified: new Date(p.lastModified),
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeProjectsCache(data: ProjectsCacheFile): void {
+  ensureCacheDir();
+  fs.writeFileSync(PROJECTS_CACHE_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function readOperations(): OperationRecord[] {
+  try {
+    if (!fs.existsSync(OPERATIONS_CACHE_FILE)) return [];
+    const raw = fs.readFileSync(OPERATIONS_CACHE_FILE, 'utf-8');
+    return JSON.parse(raw) as OperationRecord[];
+  } catch {
+    return [];
+  }
+}
+
+function writeOperations(records: OperationRecord[]): void {
+  ensureCacheDir();
+  fs.writeFileSync(OPERATIONS_CACHE_FILE, JSON.stringify(records, null, 2), 'utf-8');
 }
 
 export function cacheProjects(projects: Project[]): void {
-  const db = getDb();
-  const now = Date.now();
-
-  const stmt = db.prepare(`
-    INSERT OR REPLACE INTO projects (
-      path, name, is_git, branch, remote, status, uncommitted_changes,
-      ahead, behind, last_modified, package_manager, has_package_json, cached_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertMany = db.transaction((items: Project[]) => {
-    for (const p of items) {
-      stmt.run(
-        p.path,
-        p.name,
-        p.isGit ? 1 : 0,
-        p.branch || null,
-        p.remote || null,
-        p.status,
-        p.uncommittedChanges || 0,
-        p.ahead || 0,
-        p.behind || 0,
-        p.lastModified.getTime(),
-        p.packageManager || null,
-        p.hasPackageJson ? 1 : 0,
-        now
-      );
-    }
+  writeProjectsCache({
+    cachedAt: Date.now(),
+    projects,
   });
-
-  insertMany(projects);
 }
 
 export function getCachedProjects(): Project[] {
-  const db = getDb();
-
-  const rows = db.prepare(`
-    SELECT * FROM projects
-    ORDER BY last_modified DESC
-  `).all() as any[];
-
-  return rows.map((row) => ({
-    name: row.name,
-    path: row.path,
-    isGit: row.is_git === 1,
-    branch: row.branch || undefined,
-    remote: row.remote || undefined,
-    status: row.status as 'clean' | 'dirty' | 'unknown',
-    uncommittedChanges: row.uncommitted_changes,
-    ahead: row.ahead,
-    behind: row.behind,
-    lastModified: new Date(row.last_modified),
-    packageManager: row.package_manager as 'npm' | 'yarn' | 'pnpm' | 'bun' | undefined,
-    hasPackageJson: row.has_package_json === 1,
-  }));
+  const cache = readProjectsCache();
+  if (!cache) return [];
+  return [...cache.projects].sort(
+    (a, b) => b.lastModified.getTime() - a.lastModified.getTime()
+  );
 }
 
 export function getCacheAge(): number | null {
-  const db = getDb();
-
-  const row = db.prepare(`
-    SELECT MAX(cached_at) as cached_at FROM projects
-  `).get() as { cached_at: number | null };
-
-  return row.cached_at;
+  const cache = readProjectsCache();
+  return cache?.cachedAt ?? null;
 }
 
 export function isCacheValid(maxAgeMs: number = 5 * 60 * 1000): boolean {
@@ -127,8 +90,9 @@ export function isCacheValid(maxAgeMs: number = 5 * 60 * 1000): boolean {
 }
 
 export function clearCache(): void {
-  const db = getDb();
-  db.exec('DELETE FROM projects');
+  if (fs.existsSync(PROJECTS_CACHE_FILE)) {
+    fs.unlinkSync(PROJECTS_CACHE_FILE);
+  }
 }
 
 export function recordOperation(
@@ -137,12 +101,15 @@ export function recordOperation(
   success: boolean,
   message?: string
 ): void {
-  const db = getDb();
-
-  db.prepare(`
-    INSERT INTO operation_history (project_path, action, success, message, timestamp)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(projectPath, action, success ? 1 : 0, message || null, Date.now());
+  const records = readOperations();
+  records.unshift({
+    projectPath,
+    action,
+    success,
+    message,
+    timestamp: Date.now(),
+  });
+  writeOperations(records.slice(0, 200));
 }
 
 export function getRecentOperations(limit: number = 50): {
@@ -152,26 +119,15 @@ export function getRecentOperations(limit: number = 50): {
   message?: string;
   timestamp: Date;
 }[] {
-  const db = getDb();
-
-  const rows = db.prepare(`
-    SELECT * FROM operation_history
-    ORDER BY timestamp DESC
-    LIMIT ?
-  `).all(limit) as any[];
-
-  return rows.map((row) => ({
-    projectPath: row.project_path,
+  return readOperations().slice(0, limit).map((row) => ({
+    projectPath: row.projectPath,
     action: row.action,
-    success: row.success === 1,
-    message: row.message || undefined,
+    success: row.success,
+    message: row.message,
     timestamp: new Date(row.timestamp),
   }));
 }
 
 export function closeDb(): void {
-  if (db) {
-    db.close();
-    db = null;
-  }
+  // JSON 文件缓存无需关闭连接
 }
