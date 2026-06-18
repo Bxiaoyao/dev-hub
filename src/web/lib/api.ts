@@ -209,6 +209,7 @@ export const apiClient = {
     targetDir?: string;
     skipHooks?: boolean;
     dryRun?: boolean;
+    branchFallback?: boolean;
   }) =>
     api<ImportResponse>('/import', {
       method: 'POST',
@@ -220,6 +221,8 @@ export interface ImportResultItem {
   project: string;
   success: boolean;
   error?: string;
+  warning?: string;
+  branchUsed?: string;
   cloned?: boolean;
   updated?: boolean;
   hookRun?: boolean;

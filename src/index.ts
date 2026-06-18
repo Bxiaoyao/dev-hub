@@ -50,6 +50,7 @@ program
   .option('-d, --directory <dir>', '目标目录', process.cwd())
   .option('--parallel <n>', '并行数量', '3')
   .option('--skip-hooks', '跳过 hooks')
+  .option('--no-branch-fallback', '分支不存在时不回退到远程默认分支')
   .option('--dry-run', '预览模式')
   .action(async (options) => {
     await importProjects(options);

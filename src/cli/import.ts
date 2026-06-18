@@ -9,6 +9,7 @@ export async function importProjects(options: {
   directory: string;
   parallel: string;
   skipHooks: boolean;
+  branchFallback?: boolean;
   dryRun: boolean;
 }): Promise<void> {
   // Load export file
@@ -35,6 +36,7 @@ export async function importProjects(options: {
   const results = await importFromExport(exportData, options.directory, {
     skipHooks: options.skipHooks,
     dryRun: options.dryRun,
+    branchFallback: options.branchFallback !== false,
   });
 
   // Report results
@@ -44,6 +46,9 @@ export async function importProjects(options: {
   for (const result of results) {
     if (result.success) {
       console.log(chalk.green(`✓ ${result.project}`));
+      if (result.warning) {
+        console.log(chalk.yellow(`  ⚠ ${result.warning}`));
+      }
       success++;
     } else {
       console.log(chalk.red(`✗ ${result.project}: ${result.error}`));

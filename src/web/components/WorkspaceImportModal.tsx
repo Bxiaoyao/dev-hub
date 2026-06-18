@@ -1,6 +1,40 @@
 import { useState, useRef } from 'react';
-import { apiClient, type ImportResponse } from '../lib/api';
+import { apiClient, type ImportResponse, type ImportResultItem } from '../lib/api';
 import { useToast } from './Toast';
+
+function formatImportResultStatus(item: ImportResultItem): {
+  label: string;
+  className: string;
+  detail?: string;
+} {
+  if (item.success) {
+    const label = item.cloned ? '已克隆' : item.updated ? '已更新' : '完成';
+    return {
+      label,
+      className: 'text-green-600 dark:text-green-400',
+      detail: item.warning,
+    };
+  }
+  if (item.cloned) {
+    return {
+      label: '已克隆，依赖安装失败',
+      className: 'text-amber-600 dark:text-amber-400',
+      detail: item.error,
+    };
+  }
+  if (item.updated) {
+    return {
+      label: '已更新，依赖安装失败',
+      className: 'text-amber-600 dark:text-amber-400',
+      detail: item.error,
+    };
+  }
+  return {
+    label: '失败',
+    className: 'text-red-500',
+    detail: item.error,
+  };
+}
 
 interface WorkspaceImportModalProps {
   onClose: () => void;
@@ -11,6 +45,8 @@ export function WorkspaceImportModal({ onClose, onComplete }: WorkspaceImportMod
   const [targetDir, setTargetDir] = useState('~/Projects');
   const [fileName, setFileName] = useState<string | null>(null);
   const [content, setContent] = useState<string | null>(null);
+  const [skipHooks, setSkipHooks] = useState(false);
+  const [branchFallback, setBranchFallback] = useState(true);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,13 +81,15 @@ export function WorkspaceImportModal({ onClose, onComplete }: WorkspaceImportMod
       const response = await apiClient.importProjects({
         content,
         targetDir: targetDir.trim(),
+        skipHooks,
+        branchFallback,
       });
       setResult(response);
       showToast(
         `导入完成：${response.summary.success}/${response.summary.total} 成功`,
         response.summary.failed > 0 ? 'error' : 'success'
       );
-      if (response.summary.success > 0) {
+      if (response.results.some((r) => r.success || r.cloned || r.updated)) {
         onComplete?.();
       }
     } catch (error) {
@@ -118,6 +156,38 @@ export function WorkspaceImportModal({ onClose, onComplete }: WorkspaceImportMod
             </p>
           </div>
 
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={skipHooks}
+              onChange={(e) => setSkipHooks(e.target.checked)}
+              disabled={importing}
+              className="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              跳过依赖安装
+              <span className="block text-xs text-slate-400 mt-0.5">
+                仅 clone / 更新仓库，不执行 npm / pnpm install 等 afterClone 钩子
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={branchFallback}
+              onChange={(e) => setBranchFallback(e.target.checked)}
+              disabled={importing}
+              className="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              分支不存在时使用远程默认分支
+              <span className="block text-xs text-slate-400 mt-0.5">
+                如 YAML 中的 fix-v1.9.0 已删除，将自动切换到 main / master 等默认分支
+              </span>
+            </span>
+          </label>
+
           {result && (
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
               <div className="bg-slate-50 dark:bg-slate-900 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
@@ -125,27 +195,27 @@ export function WorkspaceImportModal({ onClose, onComplete }: WorkspaceImportMod
                 <span className="text-slate-400 ml-2">→ {result.targetDir}</span>
               </div>
               <ul className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
-                {result.results.map((item) => (
-                  <li
-                    key={item.project}
-                    className="px-3 py-2 text-sm flex items-start justify-between gap-2"
-                  >
-                    <span className="text-slate-700 dark:text-slate-300 font-medium truncate">
-                      {item.project}
-                    </span>
-                    <span className="shrink-0 text-right">
-                      {item.success ? (
-                        <span className="text-green-600 dark:text-green-400">
-                          {item.cloned ? '已克隆' : item.updated ? '已更新' : '完成'}
-                        </span>
-                      ) : (
-                        <span className="text-red-500" title={item.error}>
-                          失败
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                ))}
+                {result.results.map((item) => {
+                  const status = formatImportResultStatus(item);
+                  return (
+                    <li
+                      key={item.project}
+                      className="px-3 py-2 text-sm flex items-start justify-between gap-3"
+                    >
+                      <span className="text-slate-700 dark:text-slate-300 font-medium truncate">
+                        {item.project}
+                      </span>
+                      <span className="shrink-0 text-right max-w-[55%]">
+                        <span className={status.className}>{status.label}</span>
+                        {status.detail && (
+                          <span className={`block text-xs mt-0.5 break-words ${item.success ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                            {status.detail}
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

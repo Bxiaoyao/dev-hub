@@ -2,13 +2,15 @@ import fs from 'fs/promises';
 import path from 'path';
 import { execa } from 'execa';
 import type { ExportData, ExportedProject, Config } from '../types/index.js';
-import { cloneRepo, checkoutBranch, fetchAll } from './git.js';
+import { cloneRepo, checkoutBranchWithFallback, fetchAll } from './git.js';
 import { initConfig } from '../utils/config.js';
 
 export interface ImportResult {
   project: string;
   success: boolean;
   error?: string;
+  warning?: string;
+  branchUsed?: string;
   cloned?: boolean;
   updated?: boolean;
   hookRun?: boolean;
@@ -20,6 +22,7 @@ export async function importFromExport(
   options: {
     skipHooks?: boolean;
     dryRun?: boolean;
+    branchFallback?: boolean;
   } = {}
 ): Promise<ImportResult[]> {
   const config = await initConfig();
@@ -43,6 +46,7 @@ async function importProject(
   options: {
     skipHooks?: boolean;
     dryRun?: boolean;
+    branchFallback?: boolean;
   }
 ): Promise<ImportResult> {
   if (!project.git) {
@@ -77,8 +81,16 @@ async function importProject(
 
     await fetchAll(projectDir, config);
 
+    let branchUsed: string | undefined;
+    let branchWarning: string | undefined;
+
     if (project.branch) {
-      const checkout = await checkoutBranch(projectDir, project.branch);
+      const checkout = await checkoutBranchWithFallback(
+        projectDir,
+        project.branch,
+        config,
+        { fallback: options.branchFallback !== false }
+      );
       if (!checkout.success) {
         return {
           project: project.name,
@@ -87,11 +99,20 @@ async function importProject(
           updated: false,
         };
       }
+      branchUsed = checkout.branchUsed;
+      branchWarning = checkout.warning;
     }
 
     const hookResult = await runAfterCloneHooks(project, projectDir, config, options.skipHooks);
     if (!hookResult.success) {
-      return { project: project.name, success: false, error: hookResult.error, updated: true };
+      return {
+        project: project.name,
+        success: false,
+        error: hookResult.error,
+        updated: true,
+        branchUsed,
+        warning: branchWarning,
+      };
     }
 
     return {
@@ -100,10 +121,18 @@ async function importProject(
       cloned: false,
       updated: true,
       hookRun: hookResult.ran,
+      branchUsed,
+      warning: branchWarning,
     };
   }
 
-  const cloneResult = await cloneRepo(project.git, projectDir, config, project.branch);
+  const cloneResult = await cloneRepo(
+    project.git,
+    projectDir,
+    config,
+    project.branch,
+    { branchFallback: options.branchFallback !== false }
+  );
   if (!cloneResult.success) {
     return {
       project: project.name,
@@ -114,7 +143,14 @@ async function importProject(
 
   const hookResult = await runAfterCloneHooks(project, projectDir, config, options.skipHooks);
   if (!hookResult.success) {
-    return { project: project.name, success: false, error: hookResult.error, cloned: true };
+    return {
+      project: project.name,
+      success: false,
+      error: hookResult.error,
+      cloned: true,
+      branchUsed: cloneResult.branchUsed,
+      warning: cloneResult.warning,
+    };
   }
 
   return {
@@ -122,6 +158,8 @@ async function importProject(
     success: true,
     cloned: true,
     hookRun: hookResult.ran,
+    branchUsed: cloneResult.branchUsed,
+    warning: cloneResult.warning,
   };
 }
 

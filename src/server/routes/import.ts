@@ -9,7 +9,7 @@ export const importRouter = Router();
 // Import projects（支持 YAML 内容或服务器本地文件路径）
 importRouter.post('/', async (req, res) => {
   try {
-    const { file, content, targetDir, skipHooks, dryRun } = req.body;
+    const { file, content, targetDir, skipHooks, dryRun, branchFallback } = req.body;
 
     let loadResult;
     if (content && typeof content === 'string') {
@@ -34,6 +34,7 @@ importRouter.post('/', async (req, res) => {
     const results = await importFromExport(loadResult.data, resolvedTarget, {
       skipHooks: Boolean(skipHooks),
       dryRun: Boolean(dryRun),
+      branchFallback: branchFallback !== false,
     });
 
     const successCount = results.filter((r) => r.success).length;

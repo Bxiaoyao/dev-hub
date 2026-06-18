@@ -176,6 +176,93 @@ export async function getBranches(dir: string): Promise<BranchInfo[]> {
   return branches;
 }
 
+export function isBranchMissingError(message: string): boolean {
+  return /pathspec|not match any file|could not find remote branch|unknown revision|did not match any/i.test(
+    message
+  );
+}
+
+export async function getRemoteDefaultBranch(
+  dir: string,
+  config?: Config
+): Promise<string | undefined> {
+  const options = buildGitOptions(config, false);
+  const git = simpleGit({ ...options, baseDir: dir });
+
+  try {
+    const ref = (await git.raw(['symbolic-ref', 'refs/remotes/origin/HEAD'])).trim();
+    const match = ref.match(/refs\/remotes\/origin\/(.+)$/);
+    if (match?.[1]) return match[1];
+  } catch {
+    // fall through
+  }
+
+  try {
+    const summary = await git.branch(['-r']);
+    const remoteBranches = summary.all
+      .filter((b) => b.startsWith('origin/') && !b.includes('HEAD'))
+      .map((b) => b.replace(/^origin\//, ''));
+
+    return (
+      remoteBranches.find((b) => b === 'main') ||
+      remoteBranches.find((b) => b === 'master') ||
+      remoteBranches[0]
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function checkoutLocalOrRemote(
+  dir: string,
+  branch: string,
+  config?: Config
+): Promise<void> {
+  const options = buildGitOptions(config, false);
+  const git = simpleGit({ ...options, baseDir: dir });
+
+  try {
+    await git.checkout(branch);
+  } catch {
+    await git.checkout(['-B', branch, `origin/${branch}`]);
+  }
+}
+
+export async function checkoutBranchWithFallback(
+  dir: string,
+  branch: string,
+  config?: Config,
+  options?: { fallback?: boolean }
+): Promise<{ success: boolean; error?: string; branchUsed?: string; warning?: string }> {
+  const primary = await checkoutBranch(dir, branch);
+  if (primary.success) {
+    return { success: true, branchUsed: branch };
+  }
+
+  if (!options?.fallback || !isBranchMissingError(primary.error || '')) {
+    return primary;
+  }
+
+  const defaultBranch = await getRemoteDefaultBranch(dir, config);
+  if (!defaultBranch) {
+    return primary;
+  }
+
+  try {
+    await checkoutLocalOrRemote(dir, defaultBranch, config);
+    return {
+      success: true,
+      branchUsed: defaultBranch,
+      warning: `分支 ${branch} 不存在，已切换到默认分支 ${defaultBranch}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : primary.error,
+    };
+  }
+}
+
 export async function checkoutBranch(
   dir: string,
   branch: string
@@ -403,32 +490,56 @@ export async function cloneRepo(
   url: string,
   targetDir: string,
   config?: Config,
-  branch?: string
-): Promise<{ success: boolean; error?: string }> {
-  const options = buildGitOptions(config, true);
-  const git = simpleGit(options);
+  branch?: string,
+  options?: { branchFallback?: boolean }
+): Promise<{ success: boolean; error?: string; branchUsed?: string; warning?: string }> {
+  const gitOptions = buildGitOptions(config, true);
+  const git = simpleGit(gitOptions);
 
   try {
     const authUrl = addAuthToUrl(url, config);
 
     if (branch) {
       try {
-        await git.clone(authUrl, targetDir, [
-          '--branch',
-          branch,
-          '--single-branch',
-        ]);
-        return { success: true };
-      } catch {
-        await git.clone(authUrl, targetDir);
-        const checkout = simpleGit({ ...options, baseDir: targetDir });
-        await checkout.checkout(branch);
-        return { success: true };
+        await git.clone(authUrl, targetDir, ['--branch', branch, '--single-branch']);
+        return { success: true, branchUsed: branch };
+      } catch (branchError) {
+        const branchErrorMsg =
+          branchError instanceof Error ? branchError.message : 'Unknown error';
+
+        try {
+          await git.clone(authUrl, targetDir);
+          const local = simpleGit({ ...gitOptions, baseDir: targetDir });
+          await local.checkout(branch);
+          return { success: true, branchUsed: branch };
+        } catch (checkoutError) {
+          const checkoutErrorMsg =
+            checkoutError instanceof Error ? checkoutError.message : branchErrorMsg;
+
+          if (!options?.branchFallback || !isBranchMissingError(checkoutErrorMsg)) {
+            throw checkoutError;
+          }
+
+          const defaultBranch = await getRemoteDefaultBranch(targetDir, config);
+          const branchUsed =
+            defaultBranch || (await localCurrentBranch(targetDir, config)) || 'HEAD';
+
+          if (defaultBranch) {
+            await checkoutLocalOrRemote(targetDir, defaultBranch, config);
+          }
+
+          return {
+            success: true,
+            branchUsed,
+            warning: `分支 ${branch} 不存在，已使用默认分支 ${branchUsed}`,
+          };
+        }
       }
     }
 
     await git.clone(authUrl, targetDir);
-    return { success: true };
+    const branchUsed = (await localCurrentBranch(targetDir, config)) || undefined;
+    return { success: true, branchUsed };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     if (errorMsg.includes('Authentication') || errorMsg.includes('Permission denied')) {
@@ -441,6 +552,17 @@ export async function cloneRepo(
       success: false,
       error: errorMsg,
     };
+  }
+}
+
+async function localCurrentBranch(dir: string, config?: Config): Promise<string | undefined> {
+  const options = buildGitOptions(config, false);
+  const git = simpleGit({ ...options, baseDir: dir });
+  try {
+    const branch = (await git.revparse(['--abbrev-ref', 'HEAD'])).trim();
+    return branch === 'HEAD' ? undefined : branch;
+  } catch {
+    return undefined;
   }
 }
 
