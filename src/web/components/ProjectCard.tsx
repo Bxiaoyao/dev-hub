@@ -1,6 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
 import type { Project } from '../lib/types';
-import { formatRelativeTime } from '../lib/format';
+import { formatRelativeTime, formatProjectPath } from '../lib/format';
 import { apiClient } from '../lib/api';
 import { useToast } from './Toast';
 import { Tooltip } from './Tooltip';
@@ -180,6 +180,11 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
 
         {/* 项目名称 */}
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1 truncate">{project.name}</h3>
+        <Tooltip content={project.path}>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate mb-2" title={project.path}>
+            {formatProjectPath(project.path)}
+          </p>
+        </Tooltip>
 
         {/* 分支和状态 */}
         <div className="flex items-center gap-2 mb-3">

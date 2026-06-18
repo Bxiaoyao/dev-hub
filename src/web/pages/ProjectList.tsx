@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Project } from '../lib/types';
 import { apiClient } from '../lib/api';
+import { groupProjectsByParent } from '../lib/group';
 import { ProjectCard } from '../components/ProjectCard';
 import { ProjectTable } from '../components/ProjectTable';
+import { ProjectGroupSection } from '../components/ProjectGroupSection';
 import { SearchBar } from '../components/SearchBar';
 import { BatchToolbar } from '../components/BatchToolbar';
 
@@ -13,6 +15,17 @@ interface ProjectListProps {
 }
 
 type ViewMode = 'card' | 'table';
+type GroupMode = 'folder' | 'flat';
+
+function loadCollapsedGroups(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem('devhub-collapsed-groups');
+    return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
 
 export function ProjectList({ onSelectProject, search: externalSearch, onSearchChange }: ProjectListProps) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -29,6 +42,13 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
     }
     return 'card';
   });
+  const [groupMode, setGroupMode] = useState<GroupMode>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('devhub-group-mode') as GroupMode) || 'folder';
+    }
+    return 'folder';
+  });
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(loadCollapsedGroups);
 
   // 使用外部或内部搜索状态
   const search = externalSearch !== undefined ? externalSearch : internalSearch;
@@ -38,6 +58,16 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   useEffect(() => {
     localStorage.setItem('devhub-view-mode', viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem('devhub-group-mode', groupMode);
+  }, [groupMode]);
+
+  useEffect(() => {
+    localStorage.setItem('devhub-collapsed-groups', JSON.stringify([...collapsedGroups]));
+  }, [collapsedGroups]);
+
+  const projectGroups = useMemo(() => groupProjectsByParent(projects), [projects]);
 
   const loadProjects = useCallback(async () => {
     try {
@@ -78,6 +108,26 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
 
   const handleClearSelection = () => {
     setSelectedProjects(new Set());
+  };
+
+  const handleToggleGroup = (parentDir: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(parentDir)) {
+        next.delete(parentDir);
+      } else {
+        next.add(parentDir);
+      }
+      return next;
+    });
+  };
+
+  const handleExpandAllGroups = () => {
+    setCollapsedGroups(new Set());
+  };
+
+  const handleCollapseAllGroups = () => {
+    setCollapsedGroups(new Set(projectGroups.map((g) => g.parentDir)));
   };
 
   const handleScan = async () => {
@@ -167,6 +217,10 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
         onFilterChange={setFilter}
         sort={sort}
         onSortChange={setSort}
+        groupMode={groupMode}
+        onGroupModeChange={setGroupMode}
+        onExpandAllGroups={handleExpandAllGroups}
+        onCollapseAllGroups={handleCollapseAllGroups}
         totalCount={projects.length}
         selectedCount={selectedProjects.size}
         onSelectAll={handleSelectAll}
@@ -181,6 +235,22 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
           </svg>
           <p className="text-slate-500 dark:text-slate-400">没有找到项目</p>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">点击"扫描目录"来发现项目</p>
+        </div>
+      ) : groupMode === 'folder' ? (
+        <div>
+          {projectGroups.map((group) => (
+            <ProjectGroupSection
+              key={group.parentDir}
+              parentDir={group.parentDir}
+              projects={group.projects}
+              collapsed={collapsedGroups.has(group.parentDir)}
+              onToggle={() => handleToggleGroup(group.parentDir)}
+              viewMode={viewMode}
+              selectedProjects={selectedProjects}
+              onSelect={handleToggleSelect}
+              onClick={onSelectProject}
+            />
+          ))}
         </div>
       ) : viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

@@ -21,8 +21,10 @@ projectsRouter.get('/', async (req, res) => {
 
     // Search filter
     if (search && typeof search === 'string') {
+      const q = search.toLowerCase();
       filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase())
+        p.name.toLowerCase().includes(q) ||
+        p.path.toLowerCase().includes(q)
       );
     }
 
@@ -42,6 +44,8 @@ projectsRouter.get('/', async (req, res) => {
       filtered.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === 'branch') {
       filtered.sort((a, b) => (a.branch || '').localeCompare(b.branch || ''));
+    } else if (sort === 'path') {
+      filtered.sort((a, b) => a.path.localeCompare(b.path));
     }
     // 'recent' is default
 

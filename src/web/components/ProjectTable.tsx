@@ -1,14 +1,15 @@
 import type { Project } from '../lib/types';
-import { formatRelativeTime } from '../lib/format';
+import { formatRelativeTime, formatProjectPath } from '../lib/format';
 
 interface ProjectTableProps {
   projects: Project[];
   selectedProjects: Set<string>;
   onSelect: (projectPath: string) => void;
   onClick: (project: Project) => void;
+  hidePathColumn?: boolean;
 }
 
-export function ProjectTable({ projects, selectedProjects, onSelect, onClick }: ProjectTableProps) {
+export function ProjectTable({ projects, selectedProjects, onSelect, onClick, hidePathColumn = false }: ProjectTableProps) {
   const getStatusIcon = (status: Project['status']) => {
     switch (status) {
       case 'clean': return '✓';
@@ -47,6 +48,9 @@ export function ProjectTable({ projects, selectedProjects, onSelect, onClick }: 
               />
             </th>
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">名称</th>
+            {!hidePathColumn && (
+              <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">路径</th>
+            )}
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">分支</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">状态</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">包管理</th>
@@ -74,6 +78,11 @@ export function ProjectTable({ projects, selectedProjects, onSelect, onClick }: 
               <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
                 {project.name}
               </td>
+              {!hidePathColumn && (
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs max-w-[200px] truncate" title={project.path}>
+                  {formatProjectPath(project.path)}
+                </td>
+              )}
               <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                 <span className="flex items-center gap-1">
                   <span className={`w-2 h-2 rounded-full ${

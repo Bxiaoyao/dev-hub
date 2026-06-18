@@ -5,6 +5,10 @@ interface SearchBarProps {
   onFilterChange: (value: string) => void;
   sort: string;
   onSortChange: (value: string) => void;
+  groupMode: 'folder' | 'flat';
+  onGroupModeChange: (mode: 'folder' | 'flat') => void;
+  onExpandAllGroups?: () => void;
+  onCollapseAllGroups?: () => void;
   totalCount: number;
   selectedCount: number;
   onSelectAll: () => void;
@@ -19,6 +23,10 @@ export function SearchBar({
   onFilterChange,
   sort,
   onSortChange,
+  groupMode,
+  onGroupModeChange,
+  onExpandAllGroups,
+  onCollapseAllGroups,
   totalCount,
   selectedCount,
   onSelectAll,
@@ -65,6 +73,49 @@ export function SearchBar({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* 分组模式 */}
+        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-md border border-slate-200 dark:border-slate-700">
+          <button
+            onClick={() => onGroupModeChange('folder')}
+            className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+              groupMode === 'folder'
+                ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="按父目录分组"
+          >
+            文件夹
+          </button>
+          <button
+            onClick={() => onGroupModeChange('flat')}
+            className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+              groupMode === 'flat'
+                ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="平铺显示"
+          >
+            平铺
+          </button>
+        </div>
+
+        {groupMode === 'folder' && onExpandAllGroups && onCollapseAllGroups && (
+          <>
+            <button
+              onClick={onExpandAllGroups}
+              className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1"
+            >
+              全部展开
+            </button>
+            <button
+              onClick={onCollapseAllGroups}
+              className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1"
+            >
+              全部折叠
+            </button>
+          </>
+        )}
+
         {/* 排序选择 */}
         <select
           value={sort}
@@ -73,6 +124,7 @@ export function SearchBar({
         >
           <option value="recent">按最近修改排序</option>
           <option value="name">按字母排序</option>
+          <option value="path">按路径排序</option>
         </select>
 
         {/* 视图切换 */}

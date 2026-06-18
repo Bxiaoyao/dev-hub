@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Project } from '../lib/types';
 import { apiClient } from '../lib/api';
-import { formatRelativeTime } from '../lib/format';
+import { formatRelativeTime, formatProjectPath } from '../lib/format';
 import { useToast } from '../components/Toast';
 import { Tooltip } from '../components/Tooltip';
 
@@ -125,13 +125,15 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{project.name}</h2>
-            <p className="text-sm text-slate-500 font-mono mt-1 flex items-center gap-1">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              {project.path.replace(process.env.HOME || '', '~')}
-            </p>
+            <Tooltip content={project.path}>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-mono mt-1 flex items-center gap-1 truncate max-w-xl">
+                <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span className="truncate">{formatProjectPath(project.path)}</span>
+              </p>
+            </Tooltip>
           </div>
         </div>
 
@@ -192,6 +194,12 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
               项目信息
             </h3>
             <div className="space-y-4">
+              <div>
+                <div className="text-xs text-slate-500 mb-1">项目路径</div>
+                <div className="text-sm font-mono bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-100 dark:border-slate-700 break-all text-slate-700 dark:text-slate-300">
+                  {project.path}
+                </div>
+              </div>
               <div>
                 <div className="text-xs text-slate-500 mb-1">远程仓库 (Remote)</div>
                 <div className="text-sm font-mono bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-100 dark:border-slate-700 break-all text-slate-700 dark:text-slate-300">
