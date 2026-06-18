@@ -87,7 +87,7 @@ batchRouter.post('/', async (req, res) => {
 
             case 'pull':
               if (project.isGit) {
-                result = await pull(project.path);
+                result = await pull(project.path, config);
               } else {
                 result = { success: false, error: 'Not a git repository' };
               }
@@ -95,7 +95,7 @@ batchRouter.post('/', async (req, res) => {
 
             case 'fetch':
               if (project.isGit) {
-                result = await fetchAll(project.path);
+                result = await fetchAll(project.path, config);
               } else {
                 result = { success: false, error: 'Not a git repository' };
               }
@@ -127,7 +127,7 @@ batchRouter.post('/', async (req, res) => {
 
             case 'push':
               if (project.isGit) {
-                result = await push(project.path);
+                result = await push(project.path, undefined, config);
               } else {
                 result = { success: false, error: 'Not a git repository' };
               }

@@ -1,0 +1,23 @@
+{
+  "apps": [
+    {
+      "name": "devhub",
+      "script": "bin/devhub.mjs",
+      "args": "server --port 3200",
+      "cwd": "/Users/bianshun/Desktop/项目管理",
+      "interpreter": "node",
+      "watch": false,
+      "autorestart": true,
+      "max_restarts": 3,
+      "restart_delay": 3000,
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "time": true,
+      "log_date_format": "YYYY-MM-DD HH:mm:ss",
+      "error_file": "~/.devhub/logs/error.log",
+      "out_file": "~/.devhub/logs/out.log",
+      "pid_file": "~/.devhub/devhub.pid"
+    }
+  ]
+}

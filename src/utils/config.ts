@@ -34,6 +34,15 @@ const DEFAULT_CONFIG: Config = {
     defaultFormat: 'yaml',
     includeHooks: true,
   },
+  git: {
+    credentials: {
+      username: undefined,
+      password: undefined,
+      token: undefined,
+      useSSH: true,
+    },
+    rememberCredentials: false,
+  },
 };
 
 export async function ensureConfigDir(): Promise<void> {

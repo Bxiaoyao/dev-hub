@@ -21,6 +21,9 @@ npm run dev
 
 - [功能说明文档](docs/FEATURES.md) - 详细功能介绍
 - [部署运行文档](docs/DEPLOYMENT.md) - 安装、开发、部署指南
+- [Git 凭据配置](docs/git-credentials.md) - Git 认证配置原理
+- [Git 凭据配置示例](docs/git-credentials-example.md) - 详细的配置步骤和常见问题
+- [SSH 配置完成](docs/ssh-setup-completed.md) - SSH 密钥配置完成说明
 
 ## 主要功能
 
@@ -29,6 +32,7 @@ npm run dev
 - 项目搜索和过滤
 - 分支管理
 - Git 操作面板
+- **Git 凭据配置**：支持 SSH/HTTPS 认证，避免重复输入密码
 - 依赖管理
 - 空间分析
 - 批量操作

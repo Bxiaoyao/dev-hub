@@ -118,6 +118,135 @@ export function Settings({ onBack }: SettingsProps) {
           </div>
         </section>
 
+        {/* Git 凭据配置 */}
+        <section>
+          <h3 className="text-lg font-semibold border-b border-slate-100 dark:border-slate-700 pb-2 mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v6m0 6v6m5.2-14.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m14.2 5.2l-4.2-4.2m0-6l4.2-4.2" />
+            </svg>
+            Git 凭据配置
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            配置 Git 认证信息，避免每次操作都需要输入密码。推荐使用 SSH 密钥认证。
+          </p>
+
+          <div className="space-y-4">
+            {/* 使用 SSH */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="useSSH"
+                checked={config.git?.credentials?.useSSH ?? true}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    git: {
+                      ...config.git,
+                      credentials: {
+                        ...config.git?.credentials,
+                        useSSH: e.target.checked,
+                      },
+                      rememberCredentials: config.git?.rememberCredentials ?? false,
+                    },
+                  })
+                }
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+              />
+              <label htmlFor="useSSH" className="text-sm text-slate-700 dark:text-slate-300">
+                使用 SSH 密钥认证（推荐）
+              </label>
+            </div>
+
+            {/* 仅在不使用 SSH 时显示 HTTPS 凭据配置 */}
+            {config.git?.credentials?.useSSH === false && (
+              <>
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    <strong>注意：</strong>HTTPS 凭据将以明文形式存储在配置文件中。建议使用 SSH 密钥或系统 Git 凭据助手。
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Git 用户名
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="your-username"
+                    value={config.git?.credentials?.username ?? ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        git: {
+                          ...config.git,
+                          credentials: {
+                            ...config.git?.credentials,
+                            username: e.target.value || undefined,
+                          },
+                          rememberCredentials: config.git?.rememberCredentials ?? false,
+                        },
+                      })
+                    }
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    密码 / Personal Access Token
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={config.git?.credentials?.password ?? config.git?.credentials?.token ?? ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        git: {
+                          ...config.git,
+                          credentials: {
+                            ...config.git?.credentials,
+                            password: e.target.value || undefined,
+                            token: undefined, // 清除 token 字段
+                          },
+                          rememberCredentials: config.git?.rememberCredentials ?? false,
+                        },
+                      })
+                    }
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    对于 GitHub，推荐使用 Personal Access Token (PAT) 而非密码
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* 记住凭据选项 */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="rememberCredentials"
+                checked={config.git?.rememberCredentials ?? false}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    git: {
+                      ...config.git,
+                      rememberCredentials: e.target.checked,
+                    },
+                  })
+                }
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+              />
+              <label htmlFor="rememberCredentials" className="text-sm text-slate-700 dark:text-slate-300">
+                记住凭据（保存到配置文件）
+              </label>
+            </div>
+          </div>
+        </section>
+
         {/* 扫描目录 */}
         <section>
           <h3 className="text-lg font-semibold border-b border-slate-100 dark:border-slate-700 pb-2 mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">

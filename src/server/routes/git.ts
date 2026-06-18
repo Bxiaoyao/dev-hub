@@ -74,7 +74,7 @@ gitRouter.post('/pull', async (req, res) => {
       return;
     }
 
-    const result = await pull(project.path);
+    const result = await pull(project.path, config);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -97,7 +97,7 @@ gitRouter.post('/fetch', async (req, res) => {
       return;
     }
 
-    const result = await fetchAll(project.path);
+    const result = await fetchAll(project.path, config);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });

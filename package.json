@@ -16,6 +16,8 @@
     "build:server": "tsc",
     "build:web": "vite build",
     "start": "node bin/devhub.mjs",
+    "start:daemon": "./scripts/devhub-start.sh start",
+    "stop:daemon": "./scripts/devhub-start.sh stop",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "vitest"

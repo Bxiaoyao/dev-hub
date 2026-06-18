@@ -81,6 +81,15 @@ export interface Config {
     defaultFormat: 'yaml' | 'json';
     includeHooks: boolean;
   };
+  git?: {
+    credentials?: {
+      username?: string;
+      password?: string;
+      token?: string;
+      useSSH?: boolean;
+    };
+    rememberCredentials?: boolean;
+  };
 }
 
 export interface ExportedProject {
