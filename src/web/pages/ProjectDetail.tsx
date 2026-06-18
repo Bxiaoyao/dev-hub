@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Project } from '../lib/types';
-import { apiClient } from '../lib/api';
+import { apiClient, type ProjectDetailMeta } from '../lib/api';
 import { formatRelativeTime, formatProjectPath } from '../lib/format';
 import { useToast } from '../components/Toast';
 import { Tooltip } from '../components/Tooltip';
 import { RepoLinks } from '../components/RepoLinks';
+import { ProjectTags } from '../components/ProjectTags';
+import { ProjectTagEditor } from '../components/ProjectTagEditor';
+import type { Config } from '../lib/types';
 
 interface ProjectDetailProps {
   project: Project;
@@ -13,33 +16,74 @@ interface ProjectDetailProps {
 
 interface ProjectDetailData extends Project {
   branches: { name: string; isCurrent: boolean; isRemote: boolean }[];
-  commits: string[];
+  commits: { hash: string; message: string; author: string; date: string }[];
   size: { total: number; breakdown: { name: string; size: number; cleanable: boolean }[] };
   dependencies: { name: string; version: string; dependencies: Record<string, string>; devDependencies: Record<string, string> } | null;
   outdatedPackages: { name: string; current: string; latest: string }[];
 }
 
+function buildInitialDetail(p: Project): ProjectDetailData {
+  return {
+    ...p,
+    branches: [],
+    commits: [],
+    size: { total: 0, breakdown: [] },
+    dependencies: null,
+    outdatedPackages: [],
+  };
+}
+
 export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
-  const [data, setData] = useState<ProjectDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<ProjectDetailData>(() => buildInitialDetail(project));
+  const [detailMeta, setDetailMeta] = useState<ProjectDetailMeta | null>(null);
+  const [loadingExtra, setLoadingExtra] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [tagPresets, setTagPresets] = useState<string[]>(['工作', '个人', '归档']);
+  const [showBranchModal, setShowBranchModal] = useState(false);
+  const [newBranchName, setNewBranchName] = useState('');
   const { showToast } = useToast();
 
   useEffect(() => {
-    loadDetails();
-  }, [project]);
+    apiClient.getConfig().then((cfg: Config) => {
+      if (cfg.tags?.presets?.length) {
+        setTagPresets(cfg.tags.presets);
+      }
+    }).catch(() => {});
+  }, []);
 
-  const loadDetails = useCallback(async () => {
+  useEffect(() => {
+    setData(buildInitialDetail(project));
+    setDetailMeta(null);
+    setLoadError(null);
+    setLoadingExtra(true);
+    void loadDetails(false);
+  }, [project.path]);
+
+  const loadDetails = useCallback(async (refresh = false) => {
     try {
-      setLoading(true);
-      const detail = await apiClient.getProject(project.name);
-      setData(detail);
+      if (refresh) {
+        setRefreshing(true);
+      } else {
+        setLoadingExtra(true);
+      }
+      setLoadError(null);
+      const detail = await apiClient.getProject(project.name, { refresh });
+      const { meta, ...rest } = detail;
+      setData(rest as ProjectDetailData);
+      setDetailMeta(meta ?? null);
     } catch (error) {
       console.error('Failed to load project details:', error);
+      setLoadError((error as Error).message);
+      if (!refresh) {
+        showToast('加载详情失败', 'error');
+      }
     } finally {
-      setLoading(false);
+      setLoadingExtra(false);
+      setRefreshing(false);
     }
-  }, [project.name]);
+  }, [project.name, showToast]);
 
   const handleAction = useCallback(async (action: string) => {
     setActionLoading(action);
@@ -62,7 +106,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           showToast('已打开终端', 'success');
           break;
       }
-      await loadDetails();
+      await loadDetails(true);
     } catch (error) {
       const message = (error as Error).message;
       showToast(`${action === 'pull' ? '拉取' : action === 'fetch' ? '获取' : action === 'open' ? '打开' : '打开终端'}失败: ${message}`, 'error');
@@ -76,7 +120,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
     try {
       await apiClient.gitCheckout(project.name, branch);
       showToast('已切换到分支 ' + branch, 'success');
-      await loadDetails();
+      await loadDetails(true);
     } catch (error) {
       showToast('切换分支失败: ' + (error as Error).message, 'error');
     } finally {
@@ -84,17 +128,74 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
     }
   }, [project.name, loadDetails, showToast]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const handleRevealInFinder = useCallback(async () => {
+    setActionLoading('reveal');
+    try {
+      await apiClient.revealInFinder(project.name);
+      showToast('已在文件管理器中显示', 'success');
+    } catch (error) {
+      showToast('打开失败: ' + (error as Error).message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  }, [project.name, showToast]);
 
-  if (!data) {
-    return <div className="text-center py-12 text-red-500">加载项目详情失败</div>;
-  }
+  const handleOpenPackageJson = useCallback(async () => {
+    setActionLoading('package');
+    try {
+      await apiClient.openProject(project.name, undefined, 'package.json');
+      showToast('已打开 package.json', 'success');
+    } catch (error) {
+      showToast('打开失败: ' + (error as Error).message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  }, [project.name, showToast]);
+
+  const handleCleanDir = useCallback(async (dirName: string) => {
+    if (!confirm(`确定要删除 ${dirName} 目录吗？此操作不可撤销。`)) return;
+    setActionLoading(`clean-${dirName}`);
+    try {
+      const result = await apiClient.cleanProjectDir(project.name, dirName);
+      if (result.success) {
+        const mb = result.freedBytes ? (result.freedBytes / 1024 / 1024).toFixed(0) : '?';
+        showToast(`已删除 ${dirName}，释放约 ${mb} MB`, 'success');
+        await loadDetails(true);
+      } else {
+        showToast(result.error || '删除失败', 'error');
+      }
+    } catch (error) {
+      showToast('删除失败: ' + (error as Error).message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  }, [project.name, loadDetails, showToast]);
+
+  const handleCreateBranch = useCallback(async () => {
+    const name = newBranchName.trim();
+    if (!name) {
+      showToast('请输入分支名', 'error');
+      return;
+    }
+    setActionLoading('createBranch');
+    try {
+      const result = await apiClient.createBranch(project.name, name) as { success: boolean; error?: string };
+      if (result.success) {
+        showToast(`已创建分支 ${name}`, 'success');
+        setShowBranchModal(false);
+        setNewBranchName('');
+        await loadDetails(true);
+      } else {
+        showToast(result.error || '创建分支失败', 'error');
+      }
+    } catch (error) {
+      showToast('创建分支失败: ' + (error as Error).message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  }, [project.name, newBranchName, loadDetails, showToast]);
+
+  const extraReady = !loadingExtra;
 
   return (
     <div className="animate-fade-in">
@@ -113,7 +214,20 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           <polyline points="9 18 15 12 9 6" />
         </svg>
         <span className="font-medium text-slate-900 dark:text-white">{project.name}</span>
+        {detailMeta?.cachedAt && (
+          <span className="text-xs text-slate-400">
+            · 更新于 {formatRelativeTime(new Date(detailMeta.cachedAt))}
+            {(detailMeta.refreshing || refreshing) ? ' · 后台刷新中' : detailMeta.fromCache ? ' · 缓存' : ''}
+          </span>
+        )}
       </nav>
+
+      {loadError && !extraReady && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+          加载详情失败: {loadError}
+          <button onClick={() => loadDetails(true)} className="ml-3 underline">重试</button>
+        </div>
+      )}
 
       {/* 头部 Hero 区域 */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -126,6 +240,11 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{project.name}</h2>
+            {data.tags && data.tags.length > 0 && (
+              <div className="mt-2">
+                <ProjectTags tags={data.tags} size="sm" />
+              </div>
+            )}
             <Tooltip content={project.path}>
               <p className="text-sm text-slate-500 dark:text-slate-400 font-mono mt-1 flex items-center gap-1 truncate max-w-xl">
                 <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -139,7 +258,24 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
+          <Tooltip content="重新加载分支、依赖、空间占用等详情">
+            <button
+              onClick={() => loadDetails(true)}
+              disabled={refreshing || loadingExtra}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm disabled:opacity-50"
+            >
+              {(refreshing || (detailMeta?.refreshing && loadingExtra)) ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+              ) : (
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+              )}
+              刷新详情
+            </button>
+          </Tooltip>
           <Tooltip content="在 Cursor 编辑器中打开项目">
             <button
               onClick={() => handleAction('open')}
@@ -165,10 +301,11 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
               </svg>
             </button>
           </Tooltip>
-          <Tooltip content="在访达中显示项目目录">
+          <Tooltip content="在访达 / 资源管理器中显示项目目录">
             <button
-              onClick={onBack}
-              className="flex items-center justify-center p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              onClick={handleRevealInFinder}
+              disabled={actionLoading !== null}
+              className="flex items-center justify-center p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -229,6 +366,22 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
             </div>
           </div>
 
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-slate-100">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                <line x1="7" y1="7" x2="7.01" y2="7" />
+              </svg>
+              项目标签
+            </h3>
+            <ProjectTagEditor
+              projectId={project.name}
+              tags={data.tags ?? []}
+              presets={tagPresets}
+              onChange={(tags) => setData((prev) => (prev ? { ...prev, tags } : prev))}
+            />
+          </div>
+
           {/* 依赖管理卡片 */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
             <div className="flex justify-between items-center mb-4">
@@ -241,7 +394,14 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                 依赖管理
               </h3>
               {project.packageManager && (
-                <button className="text-xs text-blue-600 hover:underline">查看 package.json</button>
+                <button
+                  type="button"
+                  onClick={handleOpenPackageJson}
+                  disabled={actionLoading !== null}
+                  className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  查看 package.json
+                </button>
               )}
             </div>
 
@@ -277,7 +437,12 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
             </div>
 
             {/* 空间占用 */}
-            {data.size && (
+            {loadingExtra && data.size.total === 0 ? (
+              <div className="mt-6 flex items-center gap-2 text-sm text-slate-400">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+                正在计算空间占用...
+              </div>
+            ) : data.size.total > 0 ? (
               <div className="mt-6">
                 <h4 className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">空间占用</h4>
                 <div className="space-y-3">
@@ -295,7 +460,15 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                       </span>
                       {item.cleanable && (
                         <Tooltip content="删除此目录">
-                          <button className="text-slate-400 hover:text-red-500 transition-colors">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleCleanDir(item.name);
+                            }}
+                            disabled={actionLoading !== null}
+                            className="text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                          >
                             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <polyline points="3 6 5 6 21 6" />
                               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -307,7 +480,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -340,7 +513,12 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                   </button>
                 </Tooltip>
                 <Tooltip content="创建新分支">
-                  <button className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md text-sm shadow-sm flex items-center gap-1 hover:bg-slate-50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setShowBranchModal(true)}
+                    disabled={actionLoading !== null}
+                    className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md text-sm shadow-sm flex items-center gap-1 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
@@ -352,7 +530,17 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
             </div>
 
             <div className="p-2 h-64 overflow-y-auto">
-              {data.branches.slice(0, 15).map((branch) => (
+              {loadingExtra && data.branches.length === 0 ? (
+                <div className="flex items-center justify-center h-full gap-2 text-sm text-slate-400">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
+                  正在加载分支与提交记录...
+                </div>
+              ) : data.branches.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-sm text-slate-400">
+                  暂无分支信息
+                </div>
+              ) : (
+              data.branches.slice(0, 15).map((branch) => (
                 <div
                   key={branch.name}
                   className={`flex items-center justify-between p-3 rounded-lg cursor-pointer group transition-colors ${
@@ -386,13 +574,20 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
                     </span>
                   ) : !branch.isRemote && (
                     <Tooltip content="切换到此分支">
-                      <button className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleCheckout(branch.name);
+                        }}
+                        className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded"
+                      >
                         切换
                       </button>
                     </Tooltip>
                   )}
                 </div>
-              ))}
+              )))}
             </div>
           </div>
 
@@ -407,22 +602,23 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
             </h3>
             {data.commits.length > 0 ? (
               <div className="relative pl-4 border-l border-slate-200 dark:border-slate-700 space-y-6">
-                {data.commits.slice(0, 5).map((commit, i) => {
-                  const parts = commit.split(' ');
-                  const hash = parts[0];
-                  const message = parts.slice(1).join(' ');
-                  return (
-                    <div key={i} className="relative">
-                      <div className={`absolute -left-6 top-1 w-4 h-4 bg-white dark:bg-slate-800 border-2 ${i === 0 ? 'border-blue-500' : 'border-slate-300 dark:border-slate-600'} rounded-full`} />
-                      <div className="text-sm font-medium text-slate-900 dark:text-white">{message}</div>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                        <Tooltip content="提交哈希">
-                          <span className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{hash}</span>
-                        </Tooltip>
-                      </div>
+                {data.commits.slice(0, 5).map((commit) => (
+                  <div key={commit.hash} className="relative">
+                    <div className={`absolute -left-6 top-1 w-4 h-4 bg-white dark:bg-slate-800 border-2 ${data.commits[0]?.hash === commit.hash ? 'border-blue-500' : 'border-slate-300 dark:border-slate-600'} rounded-full`} />
+                    <div className="text-sm font-medium text-slate-900 dark:text-white">
+                      {commit.message || '(无提交说明)'}
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
+                      <Tooltip content="提交哈希">
+                        <span className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{commit.hash}</span>
+                      </Tooltip>
+                      {commit.author && <span>{commit.author}</span>}
+                      {commit.date && (
+                        <span>{formatRelativeTime(new Date(commit.date))}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-sm text-slate-500">暂无提交记录</p>
@@ -430,6 +626,45 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           </div>
         </div>
       </div>
+
+      {showBranchModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">创建新分支</h3>
+            <input
+              type="text"
+              value={newBranchName}
+              onChange={(e) => setNewBranchName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleCreateBranch();
+              }}
+              placeholder="例如: feature/my-task"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBranchModal(false);
+                  setNewBranchName('');
+                }}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCreateBranch()}
+                disabled={actionLoading === 'createBranch'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {actionLoading === 'createBranch' ? '创建中...' : '创建'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

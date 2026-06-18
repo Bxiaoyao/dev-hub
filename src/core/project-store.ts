@@ -4,12 +4,14 @@ import {
   getCachedProjects,
   getCacheAge,
 } from '../utils/cache.js';
+import { attachTagsToProjects } from './project-meta.js';
 import type { Config, Project } from '../types/index.js';
 
 export interface ProjectsListMeta {
   cachedAt: string | null;
   fromCache: boolean;
   refreshing: boolean;
+  tagPresets?: string[];
 }
 
 export interface ProjectsListResult {
@@ -42,12 +44,13 @@ export async function refreshProjects(config: Config): Promise<Project[]> {
   return refreshPromise;
 }
 
-function buildMeta(fromCache: boolean): ProjectsListMeta {
+function buildMeta(fromCache: boolean, config?: Config): ProjectsListMeta {
   const cachedAt = getCacheAge();
   return {
     cachedAt: cachedAt ? new Date(cachedAt).toISOString() : null,
     fromCache,
     refreshing: isBackgroundRefreshing || refreshPromise !== null,
+    tagPresets: config?.tags?.presets ?? ['工作', '个人', '归档'],
   };
 }
 
@@ -59,18 +62,23 @@ export async function getProjects(
   config: Config,
   options?: { refresh?: boolean }
 ): Promise<ProjectsListResult> {
+  let projects: Project[];
+
   if (options?.refresh) {
-    const projects = await refreshProjects(config);
-    return { projects, meta: buildMeta(false) };
+    projects = await refreshProjects(config);
+    projects = await attachTagsToProjects(projects);
+    return { projects, meta: buildMeta(false, config) };
   }
 
   const cached = getCachedProjects();
   if (cached.length > 0) {
-    return { projects: cached, meta: buildMeta(true) };
+    projects = await attachTagsToProjects(cached);
+    return { projects, meta: buildMeta(true, config) };
   }
 
-  const projects = await refreshProjects(config);
-  return { projects, meta: buildMeta(false) };
+  projects = await refreshProjects(config);
+  projects = await attachTagsToProjects(projects);
+  return { projects, meta: buildMeta(false, config) };
 }
 
 /** 按名称或路径查找项目（优先缓存，避免每次操作都全量扫描） */
@@ -128,7 +136,7 @@ export function warmupProjectsCache(getConfig: () => Promise<Config>): void {
 
 export function applyProjectFilters(
   projects: Project[],
-  query: { filter?: string; sort?: string; search?: string }
+  query: { filter?: string; sort?: string; search?: string; tag?: string }
 ): Project[] {
   let filtered = projects;
 
@@ -137,8 +145,15 @@ export function applyProjectFilters(
     filtered = filtered.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
-        p.path.toLowerCase().includes(q)
+        p.path.toLowerCase().includes(q) ||
+        (p.tags ?? []).some((t) => t.toLowerCase().includes(q))
     );
+  }
+
+  if (query.tag === '__untagged__') {
+    filtered = filtered.filter((p) => !p.tags?.length);
+  } else if (query.tag) {
+    filtered = filtered.filter((p) => p.tags?.includes(query.tag!));
   }
 
   if (query.filter === 'git') {

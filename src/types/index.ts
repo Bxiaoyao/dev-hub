@@ -12,6 +12,8 @@ export interface Project {
   packageManager?: 'npm' | 'yarn' | 'pnpm' | 'bun';
   nodeVersion?: string;
   hasPackageJson: boolean;
+  /** 用户自定义标签，如「工作」「个人」「归档」 */
+  tags?: string[];
 }
 
 export interface ProjectDetail extends Project {
@@ -81,6 +83,10 @@ export interface Config {
     defaultFormat: 'yaml' | 'json';
     includeHooks: boolean;
   };
+  tags?: {
+    /** 快捷标签预设，可在设置中修改 */
+    presets: string[];
+  };
   git?: {
     credentials?: {
       username?: string;
@@ -98,6 +104,9 @@ export interface ExportedProject {
   branch?: string;
   packageManager?: string;
   nodeVersion?: string;
+  /** 导出时的本地路径（仅供参考） */
+  path?: string;
+  tags?: string[];
   hooks?: {
     afterClone?: string[];
     afterBranchSwitch?: string[];

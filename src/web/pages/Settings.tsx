@@ -250,6 +250,31 @@ export function Settings({ onBack }: SettingsProps) {
           </div>
         </section>
 
+        {/* 项目标签预设 */}
+        <section>
+          <h3 className="text-lg font-semibold border-b border-slate-100 dark:border-slate-700 pb-2 mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            项目标签预设
+          </h3>
+          <p className="text-sm text-slate-500 mb-3">每行一个标签，用于项目详情页快捷选择，以及工作区列表筛选。</p>
+          <textarea
+            value={(config.tags?.presets ?? ['工作', '个人', '归档']).join('\n')}
+            onChange={(e) =>
+              setConfig({
+                ...config,
+                tags: {
+                  presets: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean),
+                },
+              })
+            }
+            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 text-sm h-24 focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+            placeholder={'工作\n个人\n归档'}
+          />
+        </section>
+
         {/* 扫描目录 */}
         <section>
           <h3 className="text-lg font-semibold border-b border-slate-100 dark:border-slate-700 pb-2 mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">

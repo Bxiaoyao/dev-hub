@@ -23,6 +23,7 @@ export interface ProjectsListMeta {
   cachedAt: string | null;
   fromCache: boolean;
   refreshing: boolean;
+  tagPresets?: string[];
 }
 
 export interface ProjectsListResponse {
@@ -54,12 +55,14 @@ export const apiClient = {
     filter?: string;
     sort?: string;
     search?: string;
+    tag?: string;
     refresh?: boolean;
   }): Promise<ProjectsListResponse> => {
     const query = new URLSearchParams();
     if (params?.filter) query.set('filter', params.filter);
     if (params?.sort) query.set('sort', params.sort);
     if (params?.search) query.set('search', params.search);
+    if (params?.tag) query.set('tag', params.tag);
     if (params?.refresh) query.set('refresh', 'true');
     const queryString = query.toString();
     const raw = await api<ProjectsListResponse | import('./types').Project[]>(
@@ -73,12 +76,35 @@ export const apiClient = {
       method: 'POST',
     }),
 
-  getProject: (id: string) => api<any>(`/projects/${encodeURIComponent(id)}`),
+  getProject: (id: string, options?: { refresh?: boolean }) => {
+    const query = options?.refresh ? '?refresh=true' : '';
+    return api<import('./types').ProjectDetailResponse>(
+      `/projects/${encodeURIComponent(id)}${query}`
+    );
+  },
 
-  openProject: (id: string, editor?: string) =>
+  openProject: (id: string, editor?: string, file?: string) =>
     api(`/projects/${encodeURIComponent(id)}/open`, {
       method: 'POST',
-      body: JSON.stringify({ editor }),
+      body: JSON.stringify({ editor, file }),
+    }),
+
+  revealInFinder: (id: string) =>
+    api(`/projects/${encodeURIComponent(id)}/reveal`, { method: 'POST' }),
+
+  cleanProjectDir: (id: string, dirName: string) =>
+    api<{ success: boolean; error?: string; freedBytes?: number }>(
+      `/projects/${encodeURIComponent(id)}/size/clean`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ dirName }),
+      }
+    ),
+
+  createBranch: (projectId: string, name: string) =>
+    api(`/projects/${encodeURIComponent(projectId)}/git/branch`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
     }),
 
   openTerminal: (id: string) =>
@@ -86,6 +112,15 @@ export const apiClient = {
 
   getProjectSize: (id: string) =>
     api(`/projects/${encodeURIComponent(id)}/size`),
+
+  setProjectTags: (id: string, tags: string[]) =>
+    api<{ success: boolean; tags: string[] }>(
+      `/projects/${encodeURIComponent(id)}/tags`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ tags }),
+      }
+    ),
 
   // Git
   gitPull: (projectId: string) =>
@@ -148,14 +183,63 @@ export const apiClient = {
 
   // Export/Import
   exportProjects: (projectIds: string[], outputPath?: string) =>
-    api('/export', {
+    api<{
+      success: boolean;
+      content?: string;
+      filename?: string;
+      count?: number;
+      skipped?: number;
+      path?: string;
+      error?: string;
+    }>('/export', {
       method: 'POST',
       body: JSON.stringify({ projectIds, outputPath }),
     }),
 
-  importProjects: (file: string, targetDir?: string) =>
-    api('/import', {
+  importProjects: (options: {
+    content?: string;
+    file?: string;
+    targetDir?: string;
+    skipHooks?: boolean;
+    dryRun?: boolean;
+  }) =>
+    api<ImportResponse>('/import', {
       method: 'POST',
-      body: JSON.stringify({ file, targetDir }),
+      body: JSON.stringify(options),
     }),
+};
+
+export interface ImportResultItem {
+  project: string;
+  success: boolean;
+  error?: string;
+  cloned?: boolean;
+  updated?: boolean;
+  hookRun?: boolean;
+}
+
+export interface ImportResponse {
+  results: ImportResultItem[];
+  targetDir: string;
+  summary: { total: number; success: number; failed: number };
+}
+
+export interface ProjectDetailMeta {
+  cachedAt: string | null;
+  fromCache: boolean;
+  refreshing: boolean;
+}
+
+export type ProjectDetailResponse = import('./types').Project & {
+  branches: { name: string; isCurrent: boolean; isRemote: boolean }[];
+  commits: { hash: string; message: string; author: string; date: string }[];
+  size: { total: number; breakdown: { name: string; size: number; cleanable: boolean }[] };
+  dependencies: {
+    name: string;
+    version: string;
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+  } | null;
+  outdatedPackages: { name: string; current: string; latest: string }[];
+  meta?: ProjectDetailMeta;
 };

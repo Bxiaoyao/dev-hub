@@ -375,13 +375,25 @@ export async function fetchAll(dir: string, config?: Config): Promise<{ success:
   }
 }
 
-export async function getRecentCommits(dir: string, count = 10): Promise<string[]> {
+export interface CommitInfo {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export async function getRecentCommits(dir: string, count = 10): Promise<CommitInfo[]> {
   const options = buildGitOptions(undefined, false);
   const git = simpleGit({ ...options, baseDir: dir });
 
   try {
-    const log = await git.log(['--oneline', `-n${count}`]);
-    return log.all.map((commit: { hash: string; message: string }) => `${commit.hash.substring(0, 7)} ${commit.message}`);
+    const log = await git.log({ maxCount: count });
+    return log.all.map((commit) => ({
+      hash: commit.hash.substring(0, 7),
+      message: (commit.message || commit.body?.split('\n')[0] || '').trim(),
+      author: commit.author_name || '',
+      date: commit.date || '',
+    }));
   } catch {
     return [];
   }
@@ -390,14 +402,31 @@ export async function getRecentCommits(dir: string, count = 10): Promise<string[
 export async function cloneRepo(
   url: string,
   targetDir: string,
-  config?: Config
+  config?: Config,
+  branch?: string
 ): Promise<{ success: boolean; error?: string }> {
   const options = buildGitOptions(config, true);
   const git = simpleGit(options);
 
   try {
-    // 如果配置了 HTTPS 凭据，修改 URL
     const authUrl = addAuthToUrl(url, config);
+
+    if (branch) {
+      try {
+        await git.clone(authUrl, targetDir, [
+          '--branch',
+          branch,
+          '--single-branch',
+        ]);
+        return { success: true };
+      } catch {
+        await git.clone(authUrl, targetDir);
+        const checkout = simpleGit({ ...options, baseDir: targetDir });
+        await checkout.checkout(branch);
+        return { success: true };
+      }
+    }
+
     await git.clone(authUrl, targetDir);
     return { success: true };
   } catch (error) {

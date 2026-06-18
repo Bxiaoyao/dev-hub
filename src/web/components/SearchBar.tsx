@@ -3,6 +3,9 @@ interface SearchBarProps {
   onSearchChange: (value: string) => void;
   filter: string;
   onFilterChange: (value: string) => void;
+  tag: string;
+  onTagChange: (value: string) => void;
+  tagPresets: string[];
   sort: string;
   onSortChange: (value: string) => void;
   groupMode: 'folder' | 'flat';
@@ -21,6 +24,9 @@ export function SearchBar({
   onSearchChange,
   filter,
   onFilterChange,
+  tag,
+  onTagChange,
+  tagPresets,
   sort,
   onSortChange,
   groupMode,
@@ -34,8 +40,9 @@ export function SearchBar({
   onViewModeChange,
 }: SearchBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className="flex items-center gap-1">
+    <div className="flex flex-col gap-2 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="flex items-center gap-1 flex-wrap">
         {/* 全选按钮 */}
         <button
           onClick={onSelectAll}
@@ -70,7 +77,7 @@ export function SearchBar({
             {f.label}
           </button>
         ))}
-      </div>
+        </div>
 
       <div className="flex items-center gap-2">
         {/* 分组模式 */}
@@ -165,6 +172,47 @@ export function SearchBar({
           </button>
         </div>
       </div>
+      </div>
+
+      {/* 标签筛选 */}
+      {tagPresets.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap px-1">
+          <span className="text-xs text-slate-400 shrink-0">标签</span>
+          <button
+            onClick={() => onTagChange('')}
+            className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+              !tag
+                ? 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white'
+                : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+            }`}
+          >
+            全部
+          </button>
+          {tagPresets.map((t) => (
+            <button
+              key={t}
+              onClick={() => onTagChange(tag === t ? '' : t)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                tag === t
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+          <button
+            onClick={() => onTagChange(tag === '__untagged__' ? '' : '__untagged__')}
+            className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+              tag === '__untagged__'
+                ? 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
+                : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+            }`}
+          >
+            未标签
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,21 +6,24 @@ import {
   getProjects,
   refreshProjects,
 } from '../../core/project-store.js';
-import { getProjectSize } from '../../core/size.js';
-import { getBranches, getRecentCommits } from '../../core/git.js';
-import { getDependencyInfo, getOutdatedPackages } from '../../core/deps.js';
+import { getProjectSize, cleanDirectory } from '../../core/size.js';
 import { openInEditor, getEditor } from '../../core/editor.js';
 import { openTerminal } from '../../core/terminal.js';
+import { revealInFileManager } from '../../core/reveal.js';
 import { getCacheAge } from '../../utils/cache.js';
+import { setProjectTags } from '../../core/project-meta.js';
+import { getProjectDetail, invalidateProjectDetail } from '../../core/project-detail-store.js';
+import path from 'path';
 
 export const projectsRouter = Router();
 
 function parseListQuery(req: { query: Record<string, unknown> }) {
-  const { filter, sort, search, refresh } = req.query;
+  const { filter, sort, search, refresh, tag } = req.query;
   return {
     filter: typeof filter === 'string' ? filter : undefined,
     sort: typeof sort === 'string' ? sort : undefined,
     search: typeof search === 'string' ? search : undefined,
+    tag: typeof tag === 'string' ? tag : undefined,
     refresh: refresh === 'true' || refresh === '1',
   };
 }
@@ -44,7 +47,37 @@ projectsRouter.get('/', async (req, res) => {
   }
 });
 
-// Get single project
+// Update project tags
+projectsRouter.patch('/:id/tags', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const project = await findProject(config, req.params.id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const { tags } = req.body;
+    if (!Array.isArray(tags)) {
+      res.status(400).json({ error: 'tags 必须是字符串数组' });
+      return;
+    }
+
+    const normalized = await setProjectTags(
+      project.path,
+      tags.filter((t): t is string => typeof t === 'string')
+    );
+
+    invalidateProjectDetail(project.path);
+
+    res.json({ success: true, tags: normalized });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Get single project（默认走详情缓存，refresh=true 强制刷新）
 projectsRouter.get('/:id', async (req, res) => {
   try {
     const config = await initConfig();
@@ -55,24 +88,28 @@ projectsRouter.get('/:id', async (req, res) => {
       return;
     }
 
-    const [branches, commits, size, deps, outdated] = await Promise.all([
-      project.isGit ? getBranches(project.path) : Promise.resolve([]),
-      project.isGit ? getRecentCommits(project.path, 20) : Promise.resolve([]),
-      getProjectSize(project.path),
-      getDependencyInfo(project.path),
-      project.packageManager
-        ? getOutdatedPackages(project.path, project.packageManager)
-        : Promise.resolve([]),
-    ]);
+    const refresh = req.query.refresh === 'true' || req.query.refresh === '1';
+    const { data, meta } = await getProjectDetail(project, { refresh });
 
-    res.json({
-      ...project,
-      branches,
-      commits,
-      size,
-      dependencies: deps,
-      outdatedPackages: outdated,
-    });
+    res.json({ ...data, meta });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// 在系统文件管理器中显示项目目录
+projectsRouter.post('/:id/reveal', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const project = await findProject(config, req.params.id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const result = await revealInFileManager(project.path);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -89,10 +126,10 @@ projectsRouter.post('/:id/open', async (req, res) => {
       return;
     }
 
-    const { editor } = req.body;
+    const { editor, file } = req.body;
     const resolvedEditor = editor || (await getEditor(config));
 
-    const result = await openInEditor(project.path, resolvedEditor);
+    const result = await openInEditor(project.path, resolvedEditor, file);
 
     res.json(result);
   } catch (error) {
@@ -147,6 +184,34 @@ projectsRouter.get('/:id/size', async (req, res) => {
 
     const size = await getProjectSize(project.path);
     res.json(size);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// 清理项目内可删除目录（如 node_modules）
+projectsRouter.post('/:id/size/clean', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const project = await findProject(config, req.params.id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const { dirName } = req.body;
+    if (!dirName || typeof dirName !== 'string') {
+      res.status(400).json({ error: '请提供 dirName' });
+      return;
+    }
+
+    const safeName = path.basename(dirName);
+    const result = await cleanDirectory(project.path, safeName);
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }

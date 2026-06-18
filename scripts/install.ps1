@@ -82,6 +82,10 @@ function Clear-ProjectsCache {
   if (Test-Path $cacheFile) {
     Remove-Item $cacheFile -Force
   }
+  $detailsDir = Join-Path $env:USERPROFILE '.devhub\cache\details'
+  if (Test-Path $detailsDir) {
+    Remove-Item $detailsDir -Recurse -Force
+  }
   Write-Ok '已清除项目列表缓存（重启后将重新扫描）'
 }
 

@@ -34,7 +34,6 @@ export async function importProjects(options: {
 
   const results = await importFromExport(exportData, options.directory, {
     skipHooks: options.skipHooks,
-    parallel: parseInt(options.parallel, 10),
     dryRun: options.dryRun,
   });
 

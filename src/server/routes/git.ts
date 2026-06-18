@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
 import { findProject } from '../../core/project-store.js';
+import { invalidateProjectDetail } from '../../core/project-detail-store.js';
 import {
   pull,
   fetchAll,
@@ -68,6 +69,9 @@ gitRouter.post('/pull', async (req, res) => {
     }
 
     const result = await pull(project.path, config);
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -87,6 +91,9 @@ gitRouter.post('/fetch', async (req, res) => {
     }
 
     const result = await fetchAll(project.path, config);
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -154,6 +161,10 @@ gitRouter.post('/checkout', async (req, res) => {
       result = await checkoutBranch(project.path, branch);
     }
 
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -175,6 +186,9 @@ gitRouter.post('/branch', async (req, res) => {
     }
 
     const result = await createBranch(project.path, name);
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -196,6 +210,9 @@ gitRouter.delete('/branch/:branchName', async (req, res) => {
     }
 
     const result = await deleteBranch(project.path, branchName);
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });

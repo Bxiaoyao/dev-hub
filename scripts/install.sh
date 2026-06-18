@@ -136,6 +136,7 @@ build_project() {
 
 clear_projects_cache() {
   rm -f "${HOME}/.devhub/cache/projects.json" 2>/dev/null || true
+  rm -rf "${HOME}/.devhub/cache/details" 2>/dev/null || true
   log_ok "已清除项目列表缓存（重启后将重新扫描）"
 }
 

@@ -27,7 +27,7 @@ export async function showProjectInfo(projectName: string): Promise<void> {
     console.log(chalk.dim('\n  Recent commits:'));
     const commits = await getRecentCommits(project.path, 5);
     commits.forEach((commit) => {
-      console.log(chalk.dim(`    ${commit}`));
+      console.log(chalk.dim(`    ${commit.hash} ${commit.message}`));
     });
 
     const branches = await getBranches(project.path);

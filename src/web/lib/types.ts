@@ -12,6 +12,7 @@ export interface Project {
   packageManager?: 'npm' | 'yarn' | 'pnpm' | 'bun';
   nodeVersion?: string;
   hasPackageJson: boolean;
+  tags?: string[];
 }
 
 export interface Config {
@@ -40,5 +41,8 @@ export interface Config {
   export: {
     defaultFormat: 'yaml' | 'json';
     includeHooks: boolean;
+  };
+  tags?: {
+    presets: string[];
   };
 }

@@ -8,6 +8,8 @@ import { ProjectTable } from '../components/ProjectTable';
 import { ProjectGroupSection } from '../components/ProjectGroupSection';
 import { SearchBar } from '../components/SearchBar';
 import { BatchToolbar } from '../components/BatchToolbar';
+import { WorkspaceImportModal, exportSelectedProjects } from '../components/WorkspaceImportModal';
+import { useToast } from '../components/Toast';
 
 interface ProjectListProps {
   onSelectProject: (project: Project) => void;
@@ -36,6 +38,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   const [error, setError] = useState<string | null>(null);
   const [internalSearch, setInternalSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('');
   const [sort, setSort] = useState<string>('recent');
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
@@ -52,6 +55,9 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
     return 'folder';
   });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(loadCollapsedGroups);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const { showToast } = useToast();
 
   // 使用外部或内部搜索状态
   const search = externalSearch !== undefined ? externalSearch : internalSearch;
@@ -75,7 +81,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await apiClient.getProjects({ filter, sort, search });
+      const result = await apiClient.getProjects({ filter, sort, search, tag: tagFilter || undefined });
       setProjects(result.projects ?? []);
       setListMeta(result.meta ?? null);
       setError(null);
@@ -85,7 +91,7 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [filter, sort, search]);
+  }, [filter, sort, search, tagFilter]);
 
   useEffect(() => {
     loadProjects();
@@ -111,6 +117,20 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
     }
   };
 
+  const handleSelectGroup = (groupProjects: Project[]) => {
+    const paths = groupProjects.map((p) => p.path);
+    const allInGroupSelected = paths.length > 0 && paths.every((p) => selectedProjects.has(p));
+    setSelectedProjects((prev) => {
+      const next = new Set(prev);
+      if (allInGroupSelected) {
+        paths.forEach((p) => next.delete(p));
+      } else {
+        paths.forEach((p) => next.add(p));
+      }
+      return next;
+    });
+  };
+
   const handleClearSelection = () => {
     setSelectedProjects(new Set());
   };
@@ -133,6 +153,15 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
 
   const handleCollapseAllGroups = () => {
     setCollapsedGroups(new Set(projectGroups.map((g) => g.parentDir)));
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportSelectedProjects([...selectedProjects], showToast);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleScan = async () => {
@@ -190,14 +219,39 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
             )}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled={scanning}>
-            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={handleExport}
+            disabled={exporting || selectedProjects.size === 0}
+            title={selectedProjects.size === 0 ? '请先勾选要导出的项目' : undefined}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exporting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+            ) : (
+              <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            )}
             导出环境配置
+            {selectedProjects.size > 0 && (
+              <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                {selectedProjects.size}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm"
+          >
+            <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            导入并拉取
           </button>
           <button
             onClick={handleScan}
@@ -228,6 +282,9 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
         onSearchChange={setSearch}
         filter={filter}
         onFilterChange={setFilter}
+        tag={tagFilter}
+        onTagChange={setTagFilter}
+        tagPresets={listMeta?.tagPresets ?? ['工作', '个人', '归档']}
         sort={sort}
         onSortChange={setSort}
         groupMode={groupMode}
@@ -262,6 +319,8 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
               selectedProjects={selectedProjects}
               onSelect={handleToggleSelect}
               onClick={onSelectProject}
+              onSelectAll={() => handleSelectGroup(group.projects)}
+              onTagClick={setTagFilter}
             />
           ))}
         </div>
@@ -274,6 +333,8 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
               selected={selectedProjects.has(project.path)}
               onSelect={() => handleToggleSelect(project.path)}
               onClick={() => onSelectProject(project)}
+              onTagClick={setTagFilter}
+              showPath
             />
           ))}
         </div>
@@ -284,6 +345,8 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
             selectedProjects={selectedProjects}
             onSelect={handleToggleSelect}
             onClick={onSelectProject}
+            onSelectAll={handleSelectAll}
+            onTagClick={setTagFilter}
           />
         </div>
       )}
@@ -293,6 +356,15 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
           selectedCount={selectedProjects.size}
           selectedProjects={Array.from(selectedProjects)}
           onComplete={handleClearSelection}
+        />
+      )}
+
+      {showImportModal && (
+        <WorkspaceImportModal
+          onClose={() => setShowImportModal(false)}
+          onComplete={() => {
+            handleScan();
+          }}
         />
       )}
     </div>

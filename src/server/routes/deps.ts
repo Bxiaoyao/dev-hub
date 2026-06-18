@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
 import { findProject } from '../../core/project-store.js';
+import { invalidateProjectDetail } from '../../core/project-detail-store.js';
 import {
   installDependencies,
   upgradePackage,
@@ -30,6 +31,9 @@ depsRouter.post('/install', async (req, res) => {
     }
 
     const result = await installDependencies(project.path, project.packageManager);
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -85,6 +89,9 @@ depsRouter.post('/upgrade', async (req, res) => {
       version,
       project.packageManager
     );
+    if (result.success) {
+      invalidateProjectDetail(project.path);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });

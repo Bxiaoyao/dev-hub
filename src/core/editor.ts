@@ -1,4 +1,5 @@
 import { execa } from 'execa';
+import path from 'path';
 import type { Config } from '../types/index.js';
 
 const EDITOR_COMMANDS: Record<string, string> = {
@@ -15,12 +16,14 @@ const EDITOR_COMMANDS: Record<string, string> = {
 
 export async function openInEditor(
   projectPath: string,
-  editor: string
+  editor: string,
+  relativeFile?: string
 ): Promise<{ success: boolean; error?: string }> {
   const command = EDITOR_COMMANDS[editor] || editor;
+  const target = relativeFile ? path.join(projectPath, relativeFile) : projectPath;
 
   try {
-    await execa(command, [projectPath], { detached: true });
+    await execa(command, [target], { detached: true });
     return { success: true };
   } catch (error) {
     return {

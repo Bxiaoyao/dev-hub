@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { initConfig } from '../../utils/config.js';
 import { getProjects } from '../../core/project-store.js';
-import { exportProjectsToFile } from '../../core/export.js';
+import { exportProjectsToFile, exportProjectsToContent } from '../../core/export.js';
 
 export const exportRouter = Router();
 
-// Export projects
+// Export projects（Web 默认返回 YAML 内容供下载）
 exportRouter.post('/', async (req, res) => {
   try {
-    const { projectIds, outputPath, includeHooks } = req.body;
+    const { projectIds, outputPath } = req.body;
 
     const config = await initConfig();
     let { projects } = await getProjects(config);
@@ -19,10 +19,17 @@ exportRouter.post('/', async (req, res) => {
       );
     }
 
-    const result = await exportProjectsToFile(
-      projects,
-      outputPath || 'devhub-projects.yaml'
-    );
+    if (outputPath) {
+      const result = await exportProjectsToFile(projects, outputPath);
+      res.json(result);
+      return;
+    }
+
+    const result = exportProjectsToContent(projects);
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
 
     res.json(result);
   } catch (error) {

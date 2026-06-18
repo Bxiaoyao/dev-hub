@@ -13,6 +13,8 @@ interface ProjectGroupSectionProps {
   selectedProjects: Set<string>;
   onSelect: (projectPath: string) => void;
   onClick: (project: Project) => void;
+  onSelectAll?: () => void;
+  onTagClick?: (tag: string) => void;
 }
 
 export function ProjectGroupSection({
@@ -24,6 +26,8 @@ export function ProjectGroupSection({
   selectedProjects,
   onSelect,
   onClick,
+  onSelectAll,
+  onTagClick,
 }: ProjectGroupSectionProps) {
   const selectedInGroup = projects.filter((p) => selectedProjects.has(p.path)).length;
 
@@ -67,6 +71,7 @@ export function ProjectGroupSection({
                 selected={selectedProjects.has(project.path)}
                 onSelect={() => onSelect(project.path)}
                 onClick={() => onClick(project)}
+                onTagClick={onTagClick}
               />
             ))}
           </div>
@@ -77,7 +82,9 @@ export function ProjectGroupSection({
               selectedProjects={selectedProjects}
               onSelect={onSelect}
               onClick={onClick}
+              onSelectAll={onSelectAll}
               hidePathColumn
+              onTagClick={onTagClick}
             />
           </div>
         )

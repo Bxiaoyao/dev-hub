@@ -1,14 +1,16 @@
+import fs from 'fs/promises';
 import path from 'path';
 import { execa } from 'execa';
 import type { ExportData, ExportedProject, Config } from '../types/index.js';
-import { cloneRepo } from './git.js';
-import { loadConfig, getConfigDir } from '../utils/config.js';
+import { cloneRepo, checkoutBranch, fetchAll } from './git.js';
+import { initConfig } from '../utils/config.js';
 
 export interface ImportResult {
   project: string;
   success: boolean;
   error?: string;
   cloned?: boolean;
+  updated?: boolean;
   hookRun?: boolean;
 }
 
@@ -17,12 +19,13 @@ export async function importFromExport(
   targetDir: string,
   options: {
     skipHooks?: boolean;
-    parallel?: number;
     dryRun?: boolean;
-  }
+  } = {}
 ): Promise<ImportResult[]> {
+  const config = await initConfig();
+  await fs.mkdir(targetDir, { recursive: true });
+
   const results: ImportResult[] = [];
-  const config = await loadConfig();
 
   for (const project of exportData.projects) {
     const projectDir = path.join(targetDir, project.name);
@@ -42,7 +45,14 @@ async function importProject(
     dryRun?: boolean;
   }
 ): Promise<ImportResult> {
-  // Dry run - just report what would happen
+  if (!project.git) {
+    return {
+      project: project.name,
+      success: false,
+      error: '缺少 git 远程地址',
+    };
+  }
+
   if (options.dryRun) {
     return {
       project: project.name,
@@ -52,70 +62,101 @@ async function importProject(
     };
   }
 
-  // Clone if git URL exists
-  if (project.git) {
-    const cloneResult = await cloneRepo(project.git, projectDir);
-    if (!cloneResult.success) {
+  const exists = await pathExists(projectDir);
+
+  if (exists) {
+    const gitDir = path.join(projectDir, '.git');
+    const isGit = await pathExists(gitDir);
+    if (!isGit) {
       return {
         project: project.name,
         success: false,
-        error: cloneResult.error,
+        error: `目录已存在且不是 Git 仓库: ${projectDir}`,
       };
     }
 
-    // Checkout branch if specified
+    await fetchAll(projectDir, config);
+
     if (project.branch) {
-      try {
-        await execa('git', ['checkout', project.branch], { cwd: projectDir });
-      } catch {
-        // Branch might not exist, that's okay
-      }
-    }
-  }
-
-  // Run hooks
-  if (!options.skipHooks) {
-    const hooks = project.hooks?.afterClone || config.hooks.afterClone;
-    for (const hook of hooks) {
-      const resolvedHook = resolveHookVariables(hook, {
-        projectDir,
-        packageManager: project.packageManager || 'npm',
-        branch: project.branch,
-      });
-
-      try {
-        await execa(resolvedHook, [], {
-          cwd: projectDir,
-          shell: true,
-        });
-      } catch (error) {
+      const checkout = await checkoutBranch(projectDir, project.branch);
+      if (!checkout.success) {
         return {
           project: project.name,
           success: false,
-          error: `Hook failed: ${hook}`,
+          error: checkout.error || `无法切换到分支 ${project.branch}`,
+          updated: false,
         };
       }
     }
+
+    const hookResult = await runAfterCloneHooks(project, projectDir, config, options.skipHooks);
+    if (!hookResult.success) {
+      return { project: project.name, success: false, error: hookResult.error, updated: true };
+    }
+
+    return {
+      project: project.name,
+      success: true,
+      cloned: false,
+      updated: true,
+      hookRun: hookResult.ran,
+    };
+  }
+
+  const cloneResult = await cloneRepo(project.git, projectDir, config, project.branch);
+  if (!cloneResult.success) {
+    return {
+      project: project.name,
+      success: false,
+      error: cloneResult.error,
+    };
+  }
+
+  const hookResult = await runAfterCloneHooks(project, projectDir, config, options.skipHooks);
+  if (!hookResult.success) {
+    return { project: project.name, success: false, error: hookResult.error, cloned: true };
   }
 
   return {
     project: project.name,
     success: true,
     cloned: true,
-    hookRun: !options.skipHooks,
+    hookRun: hookResult.ran,
   };
 }
 
-function resolveHookVariables(
-  hook: string,
-  variables: {
-    projectDir: string;
-    packageManager: string;
-    branch?: string;
+async function runAfterCloneHooks(
+  project: ExportedProject,
+  projectDir: string,
+  config: Config,
+  skipHooks?: boolean
+): Promise<{ success: boolean; error?: string; ran: boolean }> {
+  if (skipHooks) return { success: true, ran: false };
+
+  const hooks = project.hooks?.afterClone || config.hooks.afterClone;
+  if (!hooks.length) return { success: true, ran: false };
+
+  for (const hook of hooks) {
+    const resolvedHook = hook
+      .replace('{packageManager}', project.packageManager || 'npm')
+      .replace('{projectDir}', projectDir)
+      .replace('{branch}', project.branch || '');
+
+    try {
+      await execa(resolvedHook, [], { cwd: projectDir, shell: true });
+    } catch {
+      return { success: false, error: `Hook 执行失败: ${hook}`, ran: true };
+    }
   }
-): string {
-  return hook
-    .replace('{packageManager}', variables.packageManager)
-    .replace('{projectDir}', variables.projectDir)
-    .replace('{branch}', variables.branch || '');
+
+  return { success: true, ran: true };
+}
+
+async function pathExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
 }

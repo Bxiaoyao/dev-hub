@@ -34,6 +34,9 @@ const DEFAULT_CONFIG: Config = {
     defaultFormat: 'yaml',
     includeHooks: true,
   },
+  tags: {
+    presets: ['工作', '个人', '归档'],
+  },
   git: {
     credentials: {
       username: undefined,

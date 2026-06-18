@@ -1,15 +1,18 @@
 import type { Project } from '../lib/types';
 import { formatRelativeTime, formatProjectPath } from '../lib/format';
+import { ProjectTags } from './ProjectTags';
 
 interface ProjectTableProps {
   projects: Project[];
   selectedProjects: Set<string>;
   onSelect: (projectPath: string) => void;
   onClick: (project: Project) => void;
+  onSelectAll?: () => void;
   hidePathColumn?: boolean;
+  onTagClick?: (tag: string) => void;
 }
 
-export function ProjectTable({ projects, selectedProjects, onSelect, onClick, hidePathColumn = false }: ProjectTableProps) {
+export function ProjectTable({ projects, selectedProjects, onSelect, onClick, onSelectAll, hidePathColumn = false, onTagClick }: ProjectTableProps) {
   const getStatusIcon = (status: Project['status']) => {
     switch (status) {
       case 'clean': return '✓';
@@ -43,7 +46,7 @@ export function ProjectTable({ projects, selectedProjects, onSelect, onClick, hi
               <input
                 type="checkbox"
                 checked={selectedProjects.size === projects.length && projects.length > 0}
-                onChange={() => {}}
+                onChange={() => onSelectAll?.()}
                 className="rounded border-gray-300"
               />
             </th>
@@ -52,6 +55,7 @@ export function ProjectTable({ projects, selectedProjects, onSelect, onClick, hi
               <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">路径</th>
             )}
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">分支</th>
+            <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">标签</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">状态</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">包管理</th>
             <th className="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300">修改时间</th>
@@ -91,6 +95,9 @@ export function ProjectTable({ projects, selectedProjects, onSelect, onClick, hi
                   }`} />
                   {project.branch || '-'}
                 </span>
+              </td>
+              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                <ProjectTags tags={project.tags} onTagClick={onTagClick} />
               </td>
               <td className="px-4 py-3">
                 <span className={getStatusColor(project.status)}>
