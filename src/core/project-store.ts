@@ -5,6 +5,7 @@ import {
   getCacheAge,
 } from '../utils/cache.js';
 import { attachTagsToProjects } from './project-meta.js';
+import { pathsEqual } from '../utils/project-path.js';
 import type { Config, Project } from '../types/index.js';
 
 export interface ProjectsListMeta {
@@ -87,7 +88,9 @@ export async function findProject(
   id: string
 ): Promise<Project | undefined> {
   const { projects } = await getProjects(config);
-  return projects.find((p) => p.name === id || p.path === id);
+  return projects.find(
+    (p) => p.name === id || p.path === id || pathsEqual(p.path, id)
+  );
 }
 
 export function startBackgroundRefresh(

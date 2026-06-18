@@ -69,7 +69,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
         setLoadingExtra(true);
       }
       setLoadError(null);
-      const detail = await apiClient.getProject(project.name, { refresh });
+      const detail = await apiClient.getProject(project.path, { refresh });
       const { meta, ...rest } = detail;
       setData(rest as ProjectDetailData);
       setDetailMeta(meta ?? null);
@@ -375,7 +375,7 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
               项目标签
             </h3>
             <ProjectTagEditor
-              projectId={project.name}
+              projectId={project.path}
               tags={data.tags ?? []}
               presets={tagPresets}
               onChange={(tags) => setData((prev) => (prev ? { ...prev, tags } : prev))}

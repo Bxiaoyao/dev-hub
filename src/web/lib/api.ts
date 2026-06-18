@@ -12,8 +12,15 @@ export async function api<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'API Error');
+    const text = await response.text();
+    let message = `API Error (${response.status})`;
+    try {
+      const error = JSON.parse(text) as { error?: string };
+      message = error.error || message;
+    } catch {
+      if (text) message = text.slice(0, 200);
+    }
+    throw new Error(message);
   }
 
   return response.json();
