@@ -140,7 +140,7 @@ export const ProjectCard = memo(function ProjectCard({
 
   return (
     <div
-      className={`relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md cursor-pointer group flex flex-col transition-colors ${
+      className={`relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md cursor-pointer group flex flex-col transition-colors font-sans antialiased ${
         selected ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''
       }`}
       onClick={handleCardClick}
@@ -197,24 +197,22 @@ export const ProjectCard = memo(function ProjectCard({
         </div>
 
         {/* 核心状态：分支 + 状态点 */}
-        <div className="flex items-center gap-2 min-w-0 pl-6">
+        <div className="flex items-center gap-1.5 min-w-0 pl-6 text-xs text-slate-600 dark:text-slate-300">
           {project.branch ? (
-            <span className="text-xs font-mono text-slate-600 dark:text-slate-300 truncate">
-              {project.branch}
-            </span>
+            <span className="truncate tabular-nums">{project.branch}</span>
           ) : (
-            <span className="text-xs text-slate-400">无分支</span>
+            <span className="text-slate-400">无分支</span>
           )}
           <Tooltip content={statusTip}>
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
           </Tooltip>
           {project.status === 'dirty' && project.uncommittedChanges ? (
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 shrink-0">
+            <span className="text-amber-600 dark:text-amber-400 shrink-0 tabular-nums">
               {project.uncommittedChanges}
             </span>
           ) : null}
           {project.packageManager && (
-            <span className="text-[11px] text-slate-400 shrink-0 ml-auto">
+            <span className="text-slate-400 shrink-0 ml-auto uppercase tracking-wide text-[11px]">
               {project.packageManager}
             </span>
           )}
@@ -222,7 +220,7 @@ export const ProjectCard = memo(function ProjectCard({
 
         {showPath && (
           <Tooltip content={project.path}>
-            <p className="text-[11px] text-slate-400 font-mono truncate mt-1 pl-6">
+            <p className="text-xs text-slate-400 truncate mt-1 pl-6">
               {formatProjectPath(project.path)}
             </p>
           </Tooltip>
@@ -265,13 +263,13 @@ export const ProjectCard = memo(function ProjectCard({
         )}
 
         {project.isGit && project.remote && (
-          <RepoLinks remote={project.remote} branch={project.branch} variant="compact" />
+          <RepoLinks remote={project.remote} branch={project.branch} variant="compact" compactSize="sm" />
         )}
 
         <span className="flex-1" />
 
         <Tooltip content={`更新于 ${formatRelativeTime(new Date(project.lastModified))}`}>
-          <span className="text-[10px] text-slate-400 tabular-nums shrink-0 pr-0.5">
+          <span className="text-xs text-slate-500 tabular-nums shrink-0 pr-0.5">
             {formatShortRelativeTime(new Date(project.lastModified))}
           </span>
         </Tooltip>
