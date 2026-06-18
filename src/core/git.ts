@@ -150,7 +150,7 @@ export async function getBranches(dir: string): Promise<BranchInfo[]> {
 
       branches.push({
         name: cleanName,
-        isCurrent: cleanName === currentBranch,
+        isCurrent: !isRemote && cleanName === currentBranch,
         isRemote,
         lastCommit: (info as { commit?: string }).commit,
       });

@@ -50,14 +50,12 @@ build_project() {
 # 启动服务
 start_server() {
     cd "$PROJECT_DIR"
-
-    # 创建日志目录
     mkdir -p ~/.devhub/logs
 
     log_info "正在启动 DevHub 服务..."
 
-    # 使用 PM2 启动
-    pm2 start "$PM2_CONFIG"
+    # 使用 PM2 启动（cwd 为项目根目录）
+    pm2 start "$PM2_CONFIG" --cwd "$PROJECT_DIR"
 
     # 保存 PM2 进程列表
     pm2 save

@@ -19,6 +19,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobTotal, setJobTotal] = useState(0);
   const [modalAction, setModalAction] = useState<BatchActionType | null>(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { showToast } = useToast();
 
   const handleBatchAction = async (actionName: BatchActionType, params: Record<string, string> = {}) => {
@@ -45,6 +46,7 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
   };
 
   const openModal = (actionType: BatchActionType) => {
+    setShowMoreMenu(false);
     setModalAction(actionType);
   };
 
@@ -133,20 +135,56 @@ export function BatchToolbar({ selectedCount, selectedProjects, onComplete }: Ba
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
           {/* 更多操作 */}
-          <Tooltip content="更多批量操作">
-            <button
-              onClick={() => openModal('commit')}
-              disabled={running}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="19" cy="12" r="1" />
-                <circle cx="5" cy="12" r="1" />
-              </svg>
-              更多
-            </button>
-          </Tooltip>
+          <div className="relative">
+            <Tooltip content="更多批量操作">
+              <button
+                onClick={() => setShowMoreMenu((prev) => !prev)}
+                disabled={running}
+                className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm text-sm font-medium disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="19" cy="12" r="1" />
+                  <circle cx="5" cy="12" r="1" />
+                </svg>
+                更多
+              </button>
+            </Tooltip>
+            {showMoreMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
+                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 py-1 z-50 min-w-[140px] animate-fade-in">
+                  <button
+                    onClick={() => openModal('commit')}
+                    className="w-full px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                  >
+                    批量提交
+                  </button>
+                  <button
+                    onClick={() => openModal('push')}
+                    className="w-full px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                  >
+                    批量推送
+                  </button>
+                  <button
+                    onClick={() => openModal('checkout')}
+                    className="w-full px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                  >
+                    切换到已有分支
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      handleBatchAction('clean');
+                    }}
+                    className="w-full px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                  >
+                    批量清理
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* 取消选择 */}

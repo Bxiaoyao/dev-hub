@@ -229,13 +229,14 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
       </div>
 
       {/* 快捷操作栏 */}
-      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 rounded-b-xl flex gap-2">
-        <Tooltip content="在 Cursor 中打开项目">
-          <button
-            onClick={handleOpenEditor}
-            disabled={loading !== null}
-            className="flex-1 flex justify-center items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm disabled:opacity-50"
-          >
+      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 rounded-b-xl flex gap-2 items-center">
+        <div className="flex-1 min-w-0">
+          <Tooltip content="在 Cursor 中打开项目">
+            <button
+              onClick={handleOpenEditor}
+              disabled={loading !== null}
+              className="w-full h-9 flex justify-center items-center gap-1.5 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm disabled:opacity-50"
+            >
             {loading === 'open' ? (
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20" />
@@ -247,14 +248,15 @@ export const ProjectCard = memo(function ProjectCard({ project, selected, onSele
               </svg>
             )}
             Cursor
-          </button>
-        </Tooltip>
+            </button>
+          </Tooltip>
+        </div>
         {project.packageManager && (
           <Tooltip content="安装/更新依赖">
             <button
               onClick={handleInstallDeps}
               disabled={loading !== null}
-              className="flex items-center justify-center px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm disabled:opacity-50"
+              className="h-9 w-9 shrink-0 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm disabled:opacity-50"
             >
               {loading === 'install' ? (
                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
