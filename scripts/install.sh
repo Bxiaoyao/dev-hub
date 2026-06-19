@@ -16,6 +16,8 @@
 
 set -eo pipefail
 
+export GIT_TERMINAL_PROMPT=0
+
 REPO_URL="${DEVHUB_REPO:-https://github.com/Bxiaoyao/dev-hub.git}"
 INSTALL_DIR="${DEVHUB_INSTALL_DIR:-$HOME/dev-hub}"
 BRANCH="${DEVHUB_BRANCH:-main}"
@@ -137,10 +139,13 @@ pull_latest() {
   fi
   log_info "拉取最新代码 ($BRANCH) ..."
   cd "$INSTALL_DIR"
+  # PM2 本地生成的配置，更新前还原避免 git 状态干扰
+  git restore ecosystem.config.json 2>/dev/null || git checkout -- ecosystem.config.json 2>/dev/null || true
   pull_latest_once() {
+    log_info "  → fetch origin/$BRANCH ..."
     git_remote fetch origin "$BRANCH" &&
-      git checkout "$BRANCH" &&
-      git_remote pull origin "$BRANCH"
+      { log_info "  → checkout $BRANCH ..."; git checkout "$BRANCH"; } &&
+      { log_info "  → pull origin/$BRANCH ..."; git_remote pull origin "$BRANCH"; }
   }
   if ! git_retry "拉取" pull_latest_once; then
     log_error "拉取失败，请检查网络连接"
@@ -152,18 +157,18 @@ pull_latest() {
 
 install_deps() {
   cd "$INSTALL_DIR"
-  log_info "安装 npm 依赖 ..."
+  log_info "安装 npm 依赖（可能需要 1～3 分钟，请耐心等待）..."
   if [[ -f package-lock.json ]]; then
-    npm ci
+    npm ci --no-audit --fund=false
   else
-    npm install
+    npm install --no-audit --fund=false
   fi
   log_ok "依赖安装完成"
 }
 
 build_project() {
   cd "$INSTALL_DIR"
-  log_info "构建项目 ..."
+  log_info "构建项目（编译前后端）..."
   npm run build
   log_ok "构建完成"
 }

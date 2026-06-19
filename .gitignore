@@ -1,5 +1,6 @@
 node_modules/
 dist/
+ecosystem.config.json
 *.log
 .DS_Store
 .env
