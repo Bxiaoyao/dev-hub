@@ -66,6 +66,30 @@ require_git() {
   fi
 }
 
+# GitHub HTTPS 偶发 HTTP/2 framing 错误，默认 HTTP/1.1（可用 DEVHUB_GIT_HTTP_VERSION 覆盖）
+GIT_HTTP_VERSION="${DEVHUB_GIT_HTTP_VERSION:-HTTP/1.1}"
+
+git_remote() {
+  git -c "http.version=$GIT_HTTP_VERSION" "$@"
+}
+
+git_retry() {
+  local desc="$1"
+  shift
+  local attempt=1 max=3
+  while [[ $attempt -le $max ]]; do
+    if "$@"; then
+      return 0
+    fi
+    if [[ $attempt -lt $max ]]; then
+      log_warn "${desc}失败，${attempt}/${max} 次重试..."
+      sleep 2
+    fi
+    attempt=$((attempt + 1))
+  done
+  return 1
+}
+
 require_pm2() {
   if command -v pm2 &>/dev/null; then
     return 0
@@ -97,7 +121,10 @@ clone_repo() {
     exit 1
   fi
   log_info "克隆仓库到 $INSTALL_DIR ..."
-  git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$INSTALL_DIR"
+  if ! git_retry "克隆" git_remote clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$INSTALL_DIR"; then
+    log_error "克隆失败，请检查网络；亦可设置 DEVHUB_REPO 为 SSH 地址后重试"
+    exit 1
+  fi
   log_ok "克隆完成"
 }
 
@@ -110,9 +137,16 @@ pull_latest() {
   fi
   log_info "拉取最新代码 ($BRANCH) ..."
   cd "$INSTALL_DIR"
-  git fetch origin "$BRANCH"
-  git checkout "$BRANCH"
-  git pull origin "$BRANCH"
+  pull_latest_once() {
+    git_remote fetch origin "$BRANCH" &&
+      git checkout "$BRANCH" &&
+      git_remote pull origin "$BRANCH"
+  }
+  if ! git_retry "拉取" pull_latest_once; then
+    log_error "拉取失败，请检查网络连接"
+    log_info "可手动尝试: git -c http.version=HTTP/1.1 pull origin $BRANCH"
+    exit 1
+  fi
   log_ok "代码已更新"
 }
 

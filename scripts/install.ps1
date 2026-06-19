@@ -37,13 +37,20 @@ function Require-Git {
   }
 }
 
+function Invoke-GitRemote {
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+  $version = if ($env:DEVHUB_GIT_HTTP_VERSION) { $env:DEVHUB_GIT_HTTP_VERSION } else { 'HTTP/1.1' }
+  & git -c "http.version=$version" @Args
+  if ($LASTEXITCODE -ne 0) { throw "git $($Args -join ' ') failed" }
+}
+
 function Clone-Repo {
   Require-Git
   if (Test-Path $InstallDir) {
     throw "目录已存在: $InstallDir，请改用 update 或删除后重试"
   }
   Write-Info "克隆仓库到 $InstallDir ..."
-  git clone --branch $Branch --depth 1 $Repo $InstallDir
+  Invoke-GitRemote clone --branch $Branch --depth 1 $Repo $InstallDir
   Write-Ok '克隆完成'
 }
 
@@ -54,9 +61,9 @@ function Pull-Latest {
   }
   Push-Location $InstallDir
   Write-Info "拉取最新代码 ($Branch) ..."
-  git fetch origin $Branch
+  Invoke-GitRemote fetch origin $Branch
   git checkout $Branch
-  git pull origin $Branch
+  Invoke-GitRemote pull origin $Branch
   Pop-Location
   Write-Ok '代码已更新'
 }
