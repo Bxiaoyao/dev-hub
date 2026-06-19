@@ -88,6 +88,7 @@ cd ~/dev-hub
 ./scripts/install.sh status     # 查看状态
 ./scripts/install.sh logs       # 查看日志
 ./scripts/install.sh restart    # 重启
+./scripts/install.sh startup    # 配置开机自启（系统重启后自动恢复）
 ./scripts/install.sh stop       # 停止
 ```
 
@@ -98,6 +99,7 @@ cd ~/dev-hub
 | `status` | 查看运行状态（需 PM2） |
 | `logs` | 查看日志（需 PM2） |
 | `restart` | 重启服务（需 PM2） |
+| `startup` | 配置 PM2 开机自启（install/update 时会自动尝试；macOS 可能需 sudo） |
 | `stop` | 停止服务（仅 PM2 管理的进程；node 直接启动见下文） |
 
 #### Windows（PowerShell）
@@ -181,7 +183,16 @@ pm2 status devhub
 pm2 logs devhub
 ```
 
-（可选）开机自启：
+（开机自启）
+
+`install` / `update` 在 PM2 启动后会自动尝试配置开机自启。若提示需要管理员权限，按终端输出的 `sudo` 命令执行后再运行：
+
+```bash
+pm2 save
+./scripts/install.sh startup   # 验证
+```
+
+手动配置：
 
 ```bash
 pm2 startup    # 按终端提示执行输出的 sudo 命令

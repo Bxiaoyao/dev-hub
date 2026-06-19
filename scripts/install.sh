@@ -147,13 +147,28 @@ write_pm2_ecosystem() {
   log_ok "已写入 PM2 配置"
 }
 
+load_pm2_startup() {
+  local lib="$INSTALL_DIR/scripts/pm2-startup.sh"
+  if [[ ! -f "$lib" ]]; then
+    lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pm2-startup.sh"
+  fi
+  if [[ ! -f "$lib" ]]; then
+    log_error "未找到 pm2-startup.sh"
+    return 1
+  fi
+  # shellcheck source=scripts/pm2-startup.sh
+  source "$lib"
+}
+
 start_pm2() {
   cd "$INSTALL_DIR"
   mkdir -p "$HOME/.devhub/logs"
   if ! require_pm2; then
     start_node_direct
+    log_warn "node 直接启动不会在系统重启后自动恢复，建议安装 PM2 后重新运行 install"
     return
   fi
+  load_pm2_startup || return
   write_pm2_ecosystem
   if pm2 describe "$PM2_APP_NAME" &>/dev/null; then
     log_info "重启 PM2 进程 ..."
@@ -163,6 +178,7 @@ start_pm2() {
     pm2 start ecosystem.config.json
     pm2 save
   fi
+  setup_pm2_startup || true
   log_ok "DevHub 已运行: http://localhost:${PORT}"
   pm2 status "$PM2_APP_NAME"
 }
@@ -220,6 +236,13 @@ cmd_stop() {
   log_ok "已停止"
 }
 
+cmd_startup() {
+  require_pm2
+  cd "$INSTALL_DIR"
+  load_pm2_startup || return
+  setup_pm2_startup
+}
+
 show_help() {
   cat <<EOF
 DevHub 安装 / 更新工具
@@ -231,6 +254,7 @@ DevHub 安装 / 更新工具
   $0 logs        查看日志
   $0 restart     重启服务
   $0 stop        停止服务
+  $0 startup     配置 PM2 开机自启（系统重启后自动恢复）
 
 从 GitHub 一键安装:
   curl -fsSL https://raw.githubusercontent.com/Bxiaoyao/dev-hub/main/scripts/install.sh | bash -s -- install
@@ -258,6 +282,7 @@ main() {
     logs)     cmd_logs ;;
     restart)  cmd_restart ;;
     stop)     cmd_stop ;;
+    startup)  cmd_startup ;;
     help|-h|--help) show_help ;;
     *)
       log_error "未知命令: $cmd"

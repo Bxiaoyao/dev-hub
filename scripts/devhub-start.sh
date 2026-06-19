@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 PM2_CONFIG="$PROJECT_DIR/ecosystem.config.json"
 
 # 颜色输出
@@ -17,8 +17,12 @@ NC='\033[0m'
 
 log_info() { echo "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo "${GREEN}[SUCCESS]${NC} $1"; }
+log_ok() { log_success "$1"; }
 log_warn() { echo "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo "${RED}[ERROR]${NC} $1"; }
+
+# shellcheck source=scripts/pm2-startup.sh
+source "$SCRIPT_DIR/pm2-startup.sh"
 
 # 检查依赖
 check_dependencies() {
@@ -57,8 +61,9 @@ start_server() {
     # 使用 PM2 启动（cwd 为项目根目录）
     pm2 start "$PM2_CONFIG" --cwd "$PROJECT_DIR"
 
-    # 保存 PM2 进程列表
+    # 保存 PM2 进程列表并配置开机自启
     pm2 save
+    setup_pm2_startup || true
 
     log_success "DevHub 服务已启动"
     log_info "访问地址: http://localhost:3200"
@@ -96,10 +101,7 @@ show_logs() {
 
 # 设置开机自启动
 setup_startup() {
-    log_info "正在配置开机自启动..."
-    pm2 startup
-    pm2 save
-    log_success "开机自启动已配置"
+    setup_pm2_startup
 }
 
 # 取消开机自启动
