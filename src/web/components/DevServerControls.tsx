@@ -75,8 +75,10 @@ export function DevServerControls({
     return null;
   }
 
+  const compactIconBtn =
+    'h-8 w-8 shrink-0 flex items-center justify-center rounded-lg border transition-colors disabled:opacity-50';
   const btnClass = compact
-    ? 'h-8 px-2 flex items-center justify-center rounded-lg border text-xs font-medium transition-colors disabled:opacity-50'
+    ? compactIconBtn
     : 'flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50';
 
   if (compact) {
@@ -84,15 +86,22 @@ export function DevServerControls({
       <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
         {running ? (
           <>
-            <Tooltip content={url ? `运行中 · ${url}` : '运行中'}>
+            <Tooltip content={url ? `运行中 · ${url}` : portLabel ? `运行中 · :${portLabel}` : '运行中'}>
               <button
                 type="button"
                 onClick={handleOpenUrl}
                 disabled={!url || loading !== null}
-                className={`${btnClass} border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50`}
+                aria-label={portLabel ? `打开 :${portLabel}` : '打开开发服务器'}
+                className={`${compactIconBtn} border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1" />
-                {portLabel ? `:${portLabel}` : '运行'}
+                <span className="relative flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </span>
               </button>
             </Tooltip>
             <Tooltip content="停止开发服务器">
@@ -100,7 +109,8 @@ export function DevServerControls({
                 type="button"
                 onClick={handleStop}
                 disabled={loading !== null}
-                className={`${btnClass} border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 hover:border-red-300 hover:text-red-600`}
+                aria-label="停止开发服务器"
+                className={`${compactIconBtn} border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 hover:border-red-300 hover:text-red-600`}
               >
                 {loading === 'stop' ? (
                   <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -118,17 +128,15 @@ export function DevServerControls({
               type="button"
               onClick={handleStart}
               disabled={loading !== null || devScript === null}
-              className={`${btnClass} border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600`}
+              aria-label="启动开发服务器"
+              className={`${compactIconBtn} border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400`}
             >
               {loading === 'start' ? (
                 <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               ) : (
-                <>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="5 3 19 12 5 21 5 3" />
-                  </svg>
-                  <span className="ml-1">Dev</span>
-                </>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
               )}
             </button>
           </Tooltip>

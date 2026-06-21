@@ -223,15 +223,6 @@ export const ProjectCard = memo(function ProjectCard({
           )}
         </div>
 
-        {project.hasPackageJson && devStatus?.running && (
-          <div className="flex items-center gap-1.5 min-w-0 pl-6 mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="truncate">
-              运行中{devStatus.ports[0] ? ` · :${devStatus.ports[0]}` : ''}
-            </span>
-          </div>
-        )}
-
         {showPath && (
           <Tooltip content={project.path}>
             <p className="text-xs text-slate-400 truncate mt-1 pl-6">
@@ -248,7 +239,7 @@ export const ProjectCard = memo(function ProjectCard({
       </div>
 
       {/* 底部：图标操作 + 时间 */}
-      <div className="px-3 py-2.5 bg-slate-50/80 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-700 rounded-b-xl flex items-center gap-1.5">
+      <div className="px-3 py-2 bg-slate-50/80 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-700 rounded-b-xl flex items-center gap-1 min-w-0">
         <Tooltip content="用 Cursor 打开">
           <button type="button" onClick={handleOpenEditor} disabled={loading !== null} className={iconBtn}>
             {loading === 'open' ? (
@@ -280,6 +271,8 @@ export const ProjectCard = memo(function ProjectCard({
           <RepoLinks remote={project.remote} branch={project.branch} variant="compact" compactSize="sm" />
         )}
 
+        <span className="flex-1 min-w-0" />
+
         {project.hasPackageJson && (
           <DevServerControls
             projectId={project.name}
@@ -289,8 +282,6 @@ export const ProjectCard = memo(function ProjectCard({
             onStatusChange={onDevStatusChange}
           />
         )}
-
-        <span className="flex-1" />
 
         <Tooltip content={`更新于 ${formatRelativeTime(new Date(project.lastModified))}`}>
           <span className="text-xs text-slate-500 tabular-nums shrink-0 pr-0.5">
