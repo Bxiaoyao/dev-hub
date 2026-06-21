@@ -16,6 +16,16 @@ export interface Project {
   tags?: string[];
 }
 
+export interface DevServerStatus {
+  running: boolean;
+  ports: number[];
+  pids: number[];
+  url?: string;
+  script?: string;
+  managedByDevHub: boolean;
+  startedAt?: string;
+}
+
 export interface ProjectDetail extends Project {
   branches: BranchInfo[];
   dependencies?: DependencyInfo;

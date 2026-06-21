@@ -15,6 +15,16 @@ export interface Project {
   tags?: string[];
 }
 
+export interface DevServerStatus {
+  running: boolean;
+  ports: number[];
+  pids: number[];
+  url?: string;
+  script?: string;
+  managedByDevHub: boolean;
+  startedAt?: string;
+}
+
 export interface Config {
   workspace: {
     roots: string[];

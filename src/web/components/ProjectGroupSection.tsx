@@ -1,4 +1,4 @@
-import type { Project } from '../lib/types';
+import type { DevServerStatus, Project } from '../lib/types';
 import { formatProjectPath } from '../lib/format';
 import { ProjectCard } from './ProjectCard';
 import { ProjectTable } from './ProjectTable';
@@ -15,6 +15,8 @@ interface ProjectGroupSectionProps {
   onClick: (project: Project) => void;
   onSelectAll?: () => void;
   onTagClick?: (tag: string) => void;
+  devStatuses?: Record<string, DevServerStatus>;
+  onDevStatusChange?: (projectPath: string) => (status: DevServerStatus) => void;
 }
 
 export function ProjectGroupSection({
@@ -28,6 +30,8 @@ export function ProjectGroupSection({
   onClick,
   onSelectAll,
   onTagClick,
+  devStatuses,
+  onDevStatusChange,
 }: ProjectGroupSectionProps) {
   const selectedInGroup = projects.filter((p) => selectedProjects.has(p.path)).length;
 
@@ -72,6 +76,8 @@ export function ProjectGroupSection({
                 onSelect={() => onSelect(project.path)}
                 onClick={() => onClick(project)}
                 onTagClick={onTagClick}
+                devStatus={devStatuses?.[project.path] ?? null}
+                onDevStatusChange={onDevStatusChange?.(project.path)}
               />
             ))}
           </div>

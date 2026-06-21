@@ -13,9 +13,23 @@ import { revealInFileManager } from '../../core/reveal.js';
 import { getCacheAge } from '../../utils/cache.js';
 import { setProjectTags } from '../../core/project-meta.js';
 import { getProjectDetail, invalidateProjectDetail } from '../../core/project-detail-store.js';
+import {
+  detectDevScript,
+  getBatchDevServerStatus,
+  getDevServerStatus,
+  startDevServer,
+  stopDevServer,
+} from '../../core/dev-server.js';
 import path from 'path';
 
 export const projectsRouter = Router();
+
+const EMPTY_DEV_STATUS = {
+  running: false,
+  ports: [],
+  pids: [],
+  managedByDevHub: false,
+};
 
 function parseListQuery(req: { query: Record<string, unknown> }) {
   const { filter, sort, search, refresh, tag } = req.query;
@@ -72,6 +86,106 @@ projectsRouter.patch('/:id/tags', async (req, res) => {
     invalidateProjectDetail(project.path);
 
     res.json({ success: true, tags: normalized });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Batch dev server status
+projectsRouter.post('/dev-status', async (req, res) => {
+  try {
+    const { paths } = req.body as { paths?: string[] };
+    if (!Array.isArray(paths)) {
+      res.status(400).json({ error: 'paths 必须是字符串数组' });
+      return;
+    }
+
+    const limited = paths.slice(0, 100);
+    const statuses = await getBatchDevServerStatus(limited);
+    res.json({ statuses });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Get dev server status
+projectsRouter.get('/:id/dev', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const project = await findProject(config, req.params.id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (!project.hasPackageJson) {
+      res.json({ ...EMPTY_DEV_STATUS, devScript: null });
+      return;
+    }
+
+    const [status, devScript] = await Promise.all([
+      getDevServerStatus(project.path),
+      detectDevScript(project.path),
+    ]);
+
+    res.json({ ...status, devScript });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Start dev server
+projectsRouter.post('/:id/dev/start', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const project = await findProject(config, req.params.id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (!project.hasPackageJson) {
+      res.status(400).json({ error: '该项目没有 package.json' });
+      return;
+    }
+
+    const packageManager = project.packageManager || 'npm';
+    const { script, port } = req.body as { script?: string; port?: number };
+    const parsedPort =
+      typeof port === 'number' && port > 0 && port < 65536 ? port : undefined;
+
+    const status = await startDevServer(project.path, packageManager, {
+      script: typeof script === 'string' ? script : undefined,
+      port: parsedPort,
+    });
+
+    res.json({ success: true, ...status });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Stop dev server
+projectsRouter.post('/:id/dev/stop', async (req, res) => {
+  try {
+    const config = await initConfig();
+    const project = await findProject(config, req.params.id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const result = await stopDevServer(project.path);
+    if (!result.success) {
+      res.status(500).json(result);
+      return;
+    }
+
+    const status = await getDevServerStatus(project.path);
+    res.json({ success: true, ...status });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }

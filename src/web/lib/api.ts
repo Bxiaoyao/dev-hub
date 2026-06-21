@@ -129,6 +129,35 @@ export const apiClient = {
       }
     ),
 
+  getDevServerStatus: (id: string) =>
+    api<import('./types').DevServerStatus & { devScript?: string | null }>(
+      `/projects/${encodeURIComponent(id)}/dev`
+    ),
+
+  getBatchDevServerStatus: (paths: string[]) =>
+    api<{ statuses: Record<string, import('./types').DevServerStatus> }>(
+      '/projects/dev-status',
+      {
+        method: 'POST',
+        body: JSON.stringify({ paths }),
+      }
+    ),
+
+  startDevServer: (id: string, options?: { script?: string; port?: number }) =>
+    api<import('./types').DevServerStatus & { success: boolean }>(
+      `/projects/${encodeURIComponent(id)}/dev/start`,
+      {
+        method: 'POST',
+        body: JSON.stringify(options ?? {}),
+      }
+    ),
+
+  stopDevServer: (id: string) =>
+    api<import('./types').DevServerStatus & { success: boolean }>(
+      `/projects/${encodeURIComponent(id)}/dev/stop`,
+      { method: 'POST' }
+    ),
+
   // Git
   gitPull: (projectId: string) =>
     api(`/projects/${encodeURIComponent(projectId)}/git/pull`, { method: 'POST' }),

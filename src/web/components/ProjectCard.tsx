@@ -1,11 +1,12 @@
 import React, { useState, useCallback, memo } from 'react';
-import type { Project } from '../lib/types';
+import type { DevServerStatus, Project } from '../lib/types';
 import { formatRelativeTime, formatProjectPath, formatShortRelativeTime } from '../lib/format';
 import { apiClient } from '../lib/api';
 import { useToast } from './Toast';
 import { Tooltip } from './Tooltip';
 import { RepoLinks } from './RepoLinks';
 import { ProjectTags } from './ProjectTags';
+import { DevServerControls } from './DevServerControls';
 
 interface ProjectCardProps {
   project: Project;
@@ -15,6 +16,8 @@ interface ProjectCardProps {
   onTagClick?: (tag: string) => void;
   /** 平铺模式下显示路径；分组时父目录已在组标题展示 */
   showPath?: boolean;
+  devStatus?: DevServerStatus | null;
+  onDevStatusChange?: (status: DevServerStatus) => void;
 }
 
 const iconBtn =
@@ -27,6 +30,8 @@ export const ProjectCard = memo(function ProjectCard({
   onClick,
   onTagClick,
   showPath = false,
+  devStatus,
+  onDevStatusChange,
 }: ProjectCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
@@ -218,6 +223,15 @@ export const ProjectCard = memo(function ProjectCard({
           )}
         </div>
 
+        {project.hasPackageJson && devStatus?.running && (
+          <div className="flex items-center gap-1.5 min-w-0 pl-6 mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="truncate">
+              运行中{devStatus.ports[0] ? ` · :${devStatus.ports[0]}` : ''}
+            </span>
+          </div>
+        )}
+
         {showPath && (
           <Tooltip content={project.path}>
             <p className="text-xs text-slate-400 truncate mt-1 pl-6">
@@ -264,6 +278,16 @@ export const ProjectCard = memo(function ProjectCard({
 
         {project.isGit && project.remote && (
           <RepoLinks remote={project.remote} branch={project.branch} variant="compact" compactSize="sm" />
+        )}
+
+        {project.hasPackageJson && (
+          <DevServerControls
+            projectId={project.name}
+            hasPackageJson={project.hasPackageJson}
+            status={devStatus}
+            compact
+            onStatusChange={onDevStatusChange}
+          />
         )}
 
         <span className="flex-1" />

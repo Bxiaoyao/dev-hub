@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Project } from '../lib/types';
 import { apiClient, type ProjectsListMeta } from '../lib/api';
+import { useDevServerStatuses } from '../lib/useDevServerStatuses';
 import { groupProjectsByParent } from '../lib/group';
 import { formatRelativeTime } from '../lib/format';
 import { ProjectCard } from '../components/ProjectCard';
@@ -77,6 +78,21 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
   }, [collapsedGroups]);
 
   const projectGroups = useMemo(() => groupProjectsByParent(projects), [projects]);
+
+  const devProjectPaths = useMemo(
+    () => projects.filter((p) => p.hasPackageJson).map((p) => p.path),
+    [projects]
+  );
+  const { statuses: devStatuses, updateStatus: updateDevStatus } = useDevServerStatuses(
+    devProjectPaths
+  );
+
+  const handleDevStatusChange = useCallback(
+    (projectPath: string) => (status: import('../lib/types').DevServerStatus) => {
+      updateDevStatus(projectPath, status);
+    },
+    [updateDevStatus]
+  );
 
   const loadProjects = useCallback(async () => {
     try {
@@ -321,6 +337,8 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
               onClick={onSelectProject}
               onSelectAll={() => handleSelectGroup(group.projects)}
               onTagClick={setTagFilter}
+              devStatuses={devStatuses}
+              onDevStatusChange={handleDevStatusChange}
             />
           ))}
         </div>
@@ -335,6 +353,8 @@ export function ProjectList({ onSelectProject, search: externalSearch, onSearchC
               onClick={() => onSelectProject(project)}
               onTagClick={setTagFilter}
               showPath
+              devStatus={devStatuses[project.path] ?? null}
+              onDevStatusChange={handleDevStatusChange(project.path)}
             />
           ))}
         </div>

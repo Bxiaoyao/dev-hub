@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Project } from '../lib/types';
 import { apiClient, type ProjectDetailMeta } from '../lib/api';
+import { useDevServerStatus } from '../lib/useDevServerStatuses';
 import { formatRelativeTime, formatProjectPath } from '../lib/format';
 import { useToast } from '../components/Toast';
 import { Tooltip } from '../components/Tooltip';
 import { RepoLinks } from '../components/RepoLinks';
 import { ProjectTags } from '../components/ProjectTags';
 import { ProjectTagEditor } from '../components/ProjectTagEditor';
+import { DevServerControls } from '../components/DevServerControls';
 import type { Config } from '../lib/types';
 
 interface ProjectDetailProps {
@@ -44,6 +46,12 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
   const [showBranchModal, setShowBranchModal] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
   const { showToast } = useToast();
+  const {
+    status: devStatus,
+    devScript,
+    updateStatus: updateDevStatus,
+    refresh: refreshDevStatus,
+  } = useDevServerStatus(project.path, { enabled: project.hasPackageJson });
 
   useEffect(() => {
     apiClient.getConfig().then((cfg: Config) => {
@@ -316,6 +324,30 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           </Tooltip>
         </div>
       </div>
+
+      {project.hasPackageJson && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">开发服务器</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                检测本地 dev 进程与端口，支持从 DevHub 启动或停止
+                {devStatus?.managedByDevHub ? ' · 由 DevHub 管理' : ''}
+              </p>
+            </div>
+            <DevServerControls
+              projectId={project.name}
+              hasPackageJson={project.hasPackageJson}
+              devScript={devScript}
+              status={devStatus}
+              onStatusChange={(status) => {
+                updateDevStatus(status);
+                void refreshDevStatus();
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 两列布局 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
